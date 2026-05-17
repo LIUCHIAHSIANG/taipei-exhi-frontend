@@ -220,12 +220,13 @@
             }
         }
 
-        // 🎯 這次完全照著你的要求：名稱就是 [⏱️ 自動化測試展覽 ]，地點就是 南港展覽館
+        // 🎯 確保自動測試資料為明確的「南港展覽館」與真實地址！
         function loadMockData() {
             rawData = [
                 {
                     title: "[⏱️ 自動化測試展覽 ]", 
-                    location: "南港展覽館",
+                    location: "台北南港展覽館1館",
+                    address: "115台北市南港區經貿二路1號",
                     description: "此為後端 API 無法連線時自動啟用的測試資料。確保前端排版與導航功能皆可正常運作。",
                     eta_car: 5, eta_moto: 3, eta_transit: 5, rating_avg: 5.0,
                     reviews: [{ rating: 5, comment: "前端切版與自動導航測試正常！" }]
@@ -265,8 +266,9 @@
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
                 
-                // 自動帶入當前位置與目的地導航
-                const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
+                // 🚀 真正的 Google Maps 官方導航網址 (自動代入出發地與目的地)
+                const destination = encodeURIComponent(ex.address || ex.location || ex.title);
+                const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${destination}`;
 
                 card.innerHTML = `
                     <div class="relative w-full h-36 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
@@ -279,8 +281,11 @@
                     <div class="flex flex-col justify-between flex-1 min-w-0 w-full h-full">
                         <div>
                             <h3 class="text-base md:text-lg font-bold text-gray-900 truncate mb-1" title="${ex.title}">${ex.title}</h3>
+                            <p class="text-xs text-gray-400 font-medium truncate mb-0.5">
+                                <i class="fa-solid fa-building text-indigo-400 mr-1"></i>${ex.location || '雙北展覽館'}
+                            </p>
                             <p class="text-xs text-gray-400 font-medium truncate mb-2">
-                                <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.location || '雙北展覽館'}
+                                <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.address || ex.location || '暫無地址'}
                             </p>
                         </div>
                         
@@ -332,14 +337,16 @@
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> 展覽總覽`;
 
-            const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
+            const destination = encodeURIComponent(target.address || target.location || target.title);
+            const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${destination}`;
             
             document.getElementById('modal-info-container').innerHTML = `
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
                     <div class="flex justify-between items-start gap-2">
                         <div>
                             <h3 class="text-base font-bold text-gray-900 leading-tight">${target.title}</h3>
-                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-map-pin text-rose-500 mr-1"></i>${target.location || '雙北展覽館'}</p>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-building text-indigo-400 mr-1"></i>${target.location || '雙北展覽館'}</p>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-map-pin text-rose-500 mr-1"></i>${target.address || target.location || '暫無地址'}</p>
                         </div>
                         <span class="bg-amber-400 text-gray-900 font-black text-xs px-2 py-1 rounded-md shrink-0">
                             ★ ${(typeof target.rating_avg === 'number' ? target.rating_avg : 0).toFixed(1)}
