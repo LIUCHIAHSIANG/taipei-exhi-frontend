@@ -223,7 +223,7 @@
                     if(status) status.innerHTML = `<span class="text-amber-500">正在等待伺服器喚醒 (第 ${fetchRetryCount} 次重試)...</span>`;
                     setTimeout(fetchData, 4000);
                 } else {
-                    document.getElementById('loading-status').innerHTML = `<span class="text-rose-500">伺服器無回應，已切換至「離線測試模式」</span>`;
+                    document.getElementById('loading-status').innerHTML = `<span class="text-rose-500">伺服器無回應，已切換至「離線測試模式}」</span>`;
                     loadMockData();
                 }
             }
@@ -414,7 +414,6 @@
             document.getElementById('tab-content-reviews').classList.toggle('active', tabId === 'reviews');
         }
 
-        style="cursor:pointer;"
         function closeModal() {
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-form').reset();
