@@ -301,7 +301,7 @@
                             <div class="grid grid-cols-3 gap-1 bg-gray-50 p-1.5 rounded-lg text-center text-xs text-gray-600">
                                 <div><i class="fa-solid fa-car text-blue-500 mr-0.5"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car || '--'}分</span></div>
                                 <div class="border-x border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mr-0.5"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto || '--'}分</span></div>
-                                <div><i class="fa-solid fa-train-subway text-emerald-500 mr-0.5"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
+                                <div><i class="fa-solid fa-bus text-emerald-500 mr-0.5"></i>大眾運輸<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
                             </div>
 
                             <div class="flex gap-1.5">
@@ -414,6 +414,7 @@
             document.getElementById('tab-content-reviews').classList.toggle('active', tabId === 'reviews');
         }
 
+        style="cursor:pointer;"
         function closeModal() {
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-form').reset();
