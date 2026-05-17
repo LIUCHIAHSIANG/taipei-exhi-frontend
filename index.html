@@ -65,22 +65,29 @@
             </div>
         </div>
 
-        <div id="exhibition-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+        <div id="exhibition-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
             </div>
     </main>
 
     <div id="review-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                <h2 id="modal-title" class="text-lg font-bold text-gray-900 truncate pr-4">展覽詳情</h2>
+                <h2 id="modal-title" class="text-lg font-bold text-gray-900 flex items-center gap-1.5 pr-4">展覽詳情</h2>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-5 overflow-y-auto space-y-5 flex-1">
+                
+                <div id="modal-info-container"></div>
+                
+                <hr class="border-gray-100">
+                
                 <div>
                     <h4 class="text-sm font-bold text-gray-500 mb-2 tracking-wide"><i class="fa-solid fa-comments mr-1 text-indigo-500"></i>大眾評價與心得</h4>
                     <div id="modal-reviews-container" class="space-y-2"></div>
                 </div>
+                
                 <hr class="border-gray-100">
+                
                 <form id="review-form" onsubmit="submitReview(event)" class="space-y-3">
                     <h4 class="text-sm font-bold text-gray-500 tracking-wide"><i class="fa-solid fa-pen-to-square mr-1 text-amber-500"></i>發表您的評分與評論</h4>
                     <div>
@@ -123,7 +130,6 @@
         let currentActiveTitle = ""; 
 
         window.onload = function() {
-            // 設定一個計時器，如果 4 秒內沒拿到資料，高機率是 Render 伺服器在睡覺，跳出提示
             setTimeout(() => {
                 if (rawData.length === 0) {
                     const tip = document.getElementById('render-tip');
@@ -181,53 +187,45 @@
 
             data.forEach((ex, index) => {
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-xl md:rounded-2xl border border-gray-100 p-3 md:p-5 shadow-sm flex flex-row md:flex-col gap-4 hover:shadow-md transition-all duration-300";
+                // 💡 核心優化：不論手機或桌機，全面改為完美的「橫列式卡片 (flex-row)」
+                card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
+                // 修正為精確的原生 Google Maps 導航連結
                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
-                // 💡 核心技術修正：全面改用 data-index 綁定陣列索引，徹底解決特殊符號造成的 JS 閃退死機
                 card.innerHTML = `
-                    <div class="relative w-24 h-24 min-w-24 md:w-full md:h-48 bg-gray-100 rounded-lg md:rounded-xl overflow-hidden shrink-0">
+                    <div class="relative w-24 h-24 min-w-24 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
                         <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
-                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-[10px] md:text-xs px-2 py-0.5 rounded-md">
+                        <span class="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-[10px] md:text-xs px-1.5 py-0.5 rounded-sm">
                             ${ratingText}
                         </span>
                     </div>
 
-                    <div class="flex flex-col justify-between flex-1 min-w-0">
+                    <div class="flex flex-col justify-between flex-1 min-w-0 h-full">
                         <div>
-                            <h3 class="text-base md:text-xl font-bold text-gray-900 truncate mb-1" title="${ex.title}">${ex.title}</h3>
-                            <p class="text-xs md:text-sm text-gray-400 font-medium truncate mb-2">
+                            <h3 class="text-sm md:text-lg font-bold text-gray-900 truncate mb-0.5" title="${ex.title}">${ex.title}</h3>
+                            <p class="text-[11px] md:text-sm text-gray-400 font-medium truncate mb-2">
                                 <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.location || '雙北展覽館'}
+                            </p>
+                            <p class="text-xs text-gray-500 line-clamp-2 mb-2 hidden sm:block">
+                                ${ex.description || '歡迎來到雙北展覽資訊整合平台，點擊詳情查看更多關於本展覽的完整介紹、展出時間與精彩看點。'}
                             </p>
                         </div>
                         
-                        <div class="mt-auto space-y-2">
-                            <div class="flex items-center justify-between md:hidden gap-1.5">
-                                <div class="bg-indigo-50/60 px-2 py-1.5 rounded-lg flex-1 text-[11px] text-indigo-600 font-bold truncate">
-                                    <i class="fa-solid fa-car mr-0.5"></i>${ex.eta_car || '--'}分
-                                </div>
-                                <button onclick="openModalByIndex(this)" data-index="${index}" class="bg-gray-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md shrink-0 cursor-pointer">
-                                    <i class="fa-regular fa-comment-dots mr-0.5"></i>評論(${(ex.reviews || []).length})
-                                </button>
-                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md shrink-0 text-center cursor-pointer">
-                                    <i class="fa-solid fa-location-arrow mr-0.5"></i>導航
-                                </a>
+                        <div class="space-y-2 mt-auto">
+                            <div class="grid grid-cols-3 gap-1 bg-gray-50 p-1.5 rounded-lg text-center text-[10px] md:text-xs text-gray-600">
+                                <div><i class="fa-solid fa-car text-blue-500 mr-0.5"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car || '--'}分</span></div>
+                                <div class="border-x border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mr-0.5"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto || '--'}分</span></div>
+                                <div><i class="fa-solid fa-train-subway text-emerald-500 mr-0.5"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
                             </div>
 
-                            <div class="hidden md:grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-xl text-center text-xs text-gray-600">
-                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-car text-blue-500 mb-1 block text-sm"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car || '--'}分</span></div>
-                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mb-1 block text-sm"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto || '--'}分</span></div>
-                                <div><i class="fa-solid fa-train-subway text-emerald-500 mb-1 block text-sm"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
-                            </div>
-
-                            <div class="hidden md:flex gap-2">
-                                <button onclick="openModalByIndex(this)" data-index="${index}" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer">
-                                    <i class="fa-regular fa-comment-dots mr-1"></i>查看詳情與評論 (${(ex.reviews || []).length})
+                            <div class="flex gap-1.5">
+                                <button onclick="openModalByIndex(this)" data-index="${index}" class="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-[11px] md:text-xs py-1.5 rounded-lg transition-all cursor-pointer">
+                                    <i class="fa-solid fa-circle-info mr-0.5"></i>詳情與評論 (${(ex.reviews || []).length})
                                 </button>
-                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs px-4 py-2 rounded-xl text-center flex items-center justify-center gap-1 cursor-pointer">
-                                    <i class="fa-solid fa-location-arrow"></i>開啟導航
+                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] md:text-xs px-2.5 py-1.5 rounded-lg text-center flex items-center justify-center gap-0.5 cursor-pointer">
+                                    <i class="fa-solid fa-location-arrow"></i>導航
                                 </a>
                             </div>
                         </div>
@@ -237,29 +235,66 @@
             });
         }
 
-        // 🎲 隨機抽取系統
+        // 🎲 隨機抽取系統：重構為彈出精美展覽卡片與詳細資訊，不再直接逼使用者看評論
         function getRandomExhibition() {
             if (rawData.length === 0) {
                 alert("目前沒有展覽資料可以抽取喔！");
                 return;
             }
             const randomIndex = Math.floor(Math.random() * rawData.length);
-            openModalDetails(randomIndex);
+            openModalDetails(randomIndex, true); 
         }
 
         function openModalByIndex(button) {
             const index = parseInt(button.getAttribute('data-index'));
-            openModalDetails(index);
+            openModalDetails(index, false);
         }
 
-        // 📥 詳細資訊、評論與評分系統渲染核心
-        function openModalDetails(index) {
+        // 📥 核心整合：詳細資訊、導航系統、隨機抽卡展示、評論大合一渲染引擎
+        function openModalDetails(index, isRandom = false) {
             const target = rawData[index];
             if (!target) return;
 
             currentActiveTitle = target.title;
-            document.getElementById('modal-title').innerText = target.title;
             
+            // 動態調整標題（隨機抽中時展現驚喜特效）
+            document.getElementById('modal-title').innerHTML = isRandom 
+                ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 隨機推薦抽中卡片！` 
+                : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
+
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
+            
+            // 💡 補回詳細資訊區塊（包含完整的簡介、GPS 車程與地圖系統）
+            document.getElementById('modal-info-container').innerHTML = `
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <h3 class="text-base md:text-lg font-bold text-gray-900">${target.title}</h3>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-map-pin text-rose-500 mr-1"></i>${target.location || '雙北展覽館'}</p>
+                        </div>
+                        <span class="bg-amber-400 text-gray-900 font-black text-xs px-2 py-1 rounded-md shrink-0">
+                            ★ ${(typeof target.rating_avg === 'number' ? target.rating_avg : 0).toFixed(1)}
+                        </span>
+                    </div>
+                    
+                    <div class="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-2xs">
+                        <b class="text-gray-800 block mb-1">📝 展覽詳細介紹：</b>
+                        ${target.description || '本展覽為當季雙北最熱門亮點，現場展出豐富作品與互動裝置，非常適合安排行程前往探索，體驗藝文與知性之美。'}
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">
+                        <div><i class="fa-solid fa-car text-blue-500 block mb-0.5 text-sm"></i>開車<br><span class="font-bold text-gray-900">${target.eta_car || '--'} 分</span></div>
+                        <div class="border-x border-gray-200"><i class="fa-solid fa-motorcycle text-amber-500 block mb-0.5 text-sm"></i>機車<br><span class="font-bold text-gray-900">${target.eta_moto || '--'} 分</span></div>
+                        <div><i class="fa-solid fa-train-subway text-emerald-500 block mb-0.5 text-sm"></i>捷運<br><span class="font-bold text-gray-900">${target.eta_transit || '--'} 分</span></div>
+                    </div>
+
+                    <a href="${mapUrl}" target="_blank" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-location-arrow animate-pulse"></i> 啟動 Google Maps 地圖導航
+                    </a>
+                </div>
+            `;
+
+            // 渲染該展覽的歷史評論
             const reviews = target.reviews || [];
             const reviewsContainer = document.getElementById('modal-reviews-container');
             reviewsContainer.innerHTML = "";
@@ -288,7 +323,6 @@
             document.getElementById('review-form').reset();
         }
 
-        // 📥 評分與評論提交系統
         async function submitReview(event) {
             event.preventDefault();
             const rating = parseInt(document.getElementById('form-rating').value);
