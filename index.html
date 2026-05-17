@@ -2,334 +2,215 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雙北展覽智慧整合平台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>雙北展覽導航城</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #121212; color: #ffffff; font-family: "微軟正黑體", sans-serif; margin: 0; padding: 20px; display: flex; flex-wrap: wrap; gap: 20px; }
-        
-        .sidebar { background-color: #1E1E1E; padding: 20px; border-radius: 15px; width: 250px; flex-shrink: 0; height: fit-content; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .sidebar h2 { margin-top: 0; color: #4CAF50; font-size: 22px; line-height: 1.3; }
-        .filter-group { margin-bottom: 15px; }
-        .filter-group label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
-        select, input[type="range"], textarea { width: 100%; padding: 10px; border-radius: 6px; background: #333; color: white; border: 1px solid #555; box-sizing: border-box; }
-        .btn-random { background-color: #FF9800; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 15px; }
-        
-        #price-slider-group { display: none; margin-top: 15px; }
-
-        .main-content { flex-grow: 1; max-width: 800px; }
-        .card { background-color: #2B2B2B; border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .tags { margin-bottom: 8px; }
-        .tags span { display: inline-block; padding: 4px 8px; border-radius: 5px; margin-right: 8px; font-size: 12px; font-weight: bold; }
-        .tag-status { background-color: #4CAF50; }
-        .tag-price { background-color: #FF5722; }
-        
-        .eta-container { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .eta-badge { background: #3A3A3A; color: #EEE; font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #555; }
-        
-        .btn-group { display: flex; flex-direction: column; gap: 10px; min-width: 120px; }
-        .nav-btn { background-color: #1976D2; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 14px; cursor: pointer; }
-        .detail-btn { background-color: #555555; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #2B2B2B; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; }
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #aaa; }
-        .stars-container { display: flex; gap: 5px; font-size: 35px; margin: 10px 0; }
-        .star { color: #555; cursor: pointer; user-select: none; }
-        .star.active { color: #FFD700; }
-        .review-box { background: #1E1E1E; padding: 12px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 14px; color: #ddd; line-height: 1.6; }
-        .submit-btn { background-color: #4CAF50; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; font-size: 16px; }
-
-        .location-notice-box { text-align: center; padding: 10px; }
-        .location-icon { font-size: 50px; margin-bottom: 10px; display: inline-block; animation: bounce 2s infinite; }
-        .notice-btn { background-color: #4CAF50; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; }
-        .notice-btn:hover { background-color: #45a049; }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        @media (max-width: 680px) {
-            body { padding: 10px; gap: 15px; }
-            .sidebar { width: 100%; }
-            .card { flex-direction: column; align-items: flex-start; gap: 15px; }
-            .btn-group { width: 100%; flex-direction: row; }
-            .btn-group * { flex-grow: 1; }
-        }
+        /* 隱藏手機橫向滾動條，讓頂部標籤滑動更流暢 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* 防止手機點擊時出現藍色高亮陰影 */
+        * { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 antialiased pb-12">
 
-    <div id="location-notice-modal" class="modal" style="display: flex;">
-        <div class="modal-content location-notice-box">
-            <span class="location-icon">📍</span>
-            <h2 style="margin-top: 0; color: #4CAF50;">開啟定位，通勤免煩惱！</h2>
-            <p style="color: #ddd; font-size: 15px; line-height: 1.6; text-align: left; background: #1E1E1E; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                歡迎使用雙北展覽整合平台！為了提供您最精準的展覽導覽體驗，本網頁接下來會向您申請<b>「GPS 位置存取權限」</b>。<br><br>
-                <b>💡 我們的定位用途：</b><br>
-                1. <b>智慧通勤估時</b>：自動計算您從當前位置出發，前往各個展館的開車、騎車與大眾運輸所需時間。<br>
-                2. <b>一鍵導航規劃</b>：點擊地圖導航時，自動帶入您的起點，規劃完美路線。<br><br>
-                <span style="color: #aaa; font-size: 13px;">※ 我們極度重視您的隱私，您的位置資訊僅會留在您的瀏覽器中進行即時距離運算，絕不會上傳或儲存至任何雲端資料庫。</span>
-            </p>
-            <button class="notice-btn" onclick="acceptLocationNotice()">我知道了，開啟定位 🚀</button>
-        </div>
-    </div>
-
-    <div class="sidebar">
-        <h2>雙北展覽<br>智慧整合平台 🎨</h2>
-        <div class="filter-group">
-            <label>展覽狀態</label>
-            <select id="filter-status" onchange="applyFilters()">
-                <option value="全部">全部</option>
-                <option value="現在">現在展出中</option>
-                <option value="未來">未來即將展出</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>展覽分類</label>
-            <select id="filter-category" onchange="applyFilters()">
-                <option value="全部">全部分類</option>
-                <option value="藝術">藝術</option>
-                <option value="動漫">動漫</option>
-                <option value="科技">科技</option>
-                <option value="攝影">攝影</option>
-            </select>
-        </div>
-        
-        <div class="filter-group">
-            <label>門票費用</label>
-            <select id="filter-cost-type" onchange="togglePriceSlider()">
-                <option value="全部">全部</option>
-                <option value="免費">免費參觀 🆓</option>
-                <option value="付費">需要門票 💰</option>
-            </select>
-        </div>
-
-        <div id="price-slider-group" class="filter-group">
-            <label>最高預算: <span id="price-label">1000</span> 元</label>
-            <input type="range" id="filter-price" min="50" max="1000" step="50" value="1000" oninput="updatePriceLabel(); applyFilters()">
-        </div>
-
-        <button class="btn-random" onclick="pickRandom()">🎲 隨機幫我挑一個</button>
-    </div>
-
-    <div class="main-content">
-        <h3 id="status-text">請先閱讀並同意定位說明提示...</h3>
-        <div id="exhibition-list"></div>
-    </div>
-
-    <div id="detail-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">×</span>
-            <h2 id="modal-title" style="margin-top:0; padding-right: 20px;">展覽名稱</h2>
-            <p id="modal-info" style="color: #aaa; font-size: 14px; line-height: 1.6;"></p>
-            <h3>📖 展覽介紹</h3>
-            <p id="modal-desc" style="color: #ddd; font-size: 14px; line-height: 1.5; white-space: pre-line;"></p>
-            <h3>💬 網友評論列表</h3>
-            <div id="modal-reviews" class="review-box"></div>
-            <hr style="border: 0.5px solid #444; margin: 25px 0;">
-            <h3>✍️ 留下您的評論</h3>
-            <div class="stars-container">
-                <span class="star" data-value="1" onclick="setRating(1)">★</span>
-                <span class="star" data-value="2" onclick="setRating(2)">★</span>
-                <span class="star" data-value="3" onclick="setRating(3)">★</span>
-                <span class="star" data-value="4" onclick="setRating(4)">★</span>
-                <span class="star" data-value="5" onclick="setRating(5)">★</span>
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-xs">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-black tracking-wider text-indigo-600">
+                    <i class="fa-solid fa-compass text-amber-500 animate-spin-slow mr-1"></i>雙北展覽快搜
+                </h1>
+                <span id="location-badge" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium">
+                    <i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)
+                </span>
             </div>
-            <textarea id="review-comment" rows="3" placeholder="與大家分享您對這個展覽的看法或心得..."></textarea>
-            <button class="submit-btn" onclick="submitReview()">確認送出評論</button>
+            
+            <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 mask-image">
+                <button onclick="filterExhibitions('all')" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all">
+                    全部展覽
+                </button>
+                <button onclick="filterExhibitions('near')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
+                    <i class="fa-solid fa-walking mr-1"></i>離我最近
+                </button>
+                <button onclick="filterExhibitions('rating')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
+                    <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
+                </button>
+            </div>
         </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-4">
+        <div id="loading" class="flex flex-col items-center justify-center py-20 gap-3">
+            <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm text-gray-400 font-medium">正在為您計算與展覽的精準距離...</p>
+        </div>
+
+        <div id="exhibition-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+            </div>
+    </main>
+
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-xl flex items-center gap-6 border border-white/10">
+        <button onclick="fetchData()" class="flex items-center gap-2 text-sm font-bold tracking-wide active:scale-95 transition-all">
+            <i class="fa-solid fa-arrows-rotate text-emerald-400"></i>重新整理
+        </button>
+        <div class="w-px h-4 bg-white/20"></div>
+        <button onclick="triggerCrawler()" class="flex items-center gap-2 text-sm font-bold tracking-wide text-indigo-300 active:scale-95 transition-all">
+            <i class="fa-solid fa-spider"></i>背景爬網
+        </button>
     </div>
 
     <script>
-        let allExhibitions = []; 
-        let currentSelectedTitle = ""; 
-        let currentSelectedRating = 5; 
+        // 後端 API 網址 (請填寫你部署在 Render 的網址)
+        const API_BASE = "https://taipei-exhi-api.onrender.com";
+        let rawData = [];
+        
+        // 預設經緯度 (台北車站)
+        let userLat = 25.0478;
+        let userLon = 121.5170;
 
-        function acceptLocationNotice() {
-            document.getElementById('location-notice-modal').style.display = 'none';
-            document.getElementById('status-text').innerText = "正在取得設備 GPS 精準定位中...";
-            loadData();
-        }
-
-        function loadData() {
+        // 頁面加載完成後自動抓取 GPS 定位
+        window.onload = function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        fetchExhibitionsFromServer(position.coords.latitude, position.coords.longitude);
+                        userLat = position.coords.latitude;
+                        userLon = position.coords.longitude;
+                        document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-crosshairs text-emerald-500 mr-1"></i>已精準定位`;
+                        fetchData();
                     },
                     (error) => {
-                        fetchExhibitionsFromServer(25.0478, 121.5170);
-                    },
-                    { enableHighAccuracy: true, timeout: 7000 }
+                        console.log("無法獲取定位，使用預設北車位置。");
+                        fetchData();
+                    }
                 );
             } else {
-                fetchExhibitionsFromServer(25.0478, 121.5170);
+                fetchData();
+            }
+        };
+
+        // 向後端請求展覽資料
+        async function fetchData() {
+            showLoading(true);
+            try {
+                const res = await fetch(`${API_BASE}/api/exhibitions?lat=${userLat}&lon=${userLon}`);
+                const json = await res.json();
+                if (json.status === "success") {
+                    rawData = json.data;
+                    renderDOM(rawData);
+                } else {
+                    alert("後端回報錯誤: " + json.message);
+                }
+            } catch (err) {
+                alert("無法連線至後端伺服器，請確認後端是否已啟動！");
+            } finally {
+                showLoading(false);
             }
         }
 
-        // 🌟 核心修改 1：撈取資料從本地改成連線到 Render 雲端 API
-        function fetchExhibitionsFromServer(lat, lon) {
-            fetch(`https://taipei-exhi-api.onrender.com/api/exhibitions?lat=${lat}&lon=${lon}`)
-                .then(res => res.json())
-                .then(result => {
-                    document.getElementById('status-text').style.display = 'none';
-                    if(result.status === "success") {
-                        allExhibitions = result.data;
-                        applyFilters(); 
-                    }
-                }).catch(() => { 
-                    document.getElementById('status-text').innerText = "❌ 伺服器連線失敗，請稍後再試或檢查網路連線。"; 
-                });
-        }
+        // 渲染卡片到畫面上 (手機與桌機 RWD 優化核心)
+        function renderDOM(data) {
+            const container = document.getElementById('exhibition-list');
+            container.innerHTML = "";
 
-        function renderCards(data) {
-            const listDiv = document.getElementById('exhibition-list');
-            listDiv.innerHTML = data.length === 0 ? "<p style='color:#aaa;'>😢 沒有找到符合條件的展覽。</p>" : "";
-
-            data.forEach((ex, index) => {
-                const priceText = ex.price === 0 ? "🆓 免費" : `💰 ${ex.price} 元`;
-                const ratingText = typeof ex.rating_avg === "number" ? `⭐ ${ex.rating_avg} / 5.0` : `⭐ ${ex.rating_avg}`;
-
-                listDiv.innerHTML += `
-                    <div class="card">
-                        <div>
-                            <div class="tags">
-                                <span class="tag-status">${ex.status}展出</span>
-                                <span class="tag-price">${priceText}</span>
-                                <span style="color:#FFD700; font-weight:bold;">${ratingText}</span>
-                            </div>
-                            <h2 style="margin: 8px 0 5px 0; font-size:20px;">${ex.title}</h2>
-                            <p style="color: #aaa; margin: 0; font-size:14px;">🏛️ 地點：${ex.location}</p>
-                            
-                            <div class="eta-container">
-                                <span class="eta-badge">🚗 開車約 ${ex.eta_car} 分鐘</span>
-                                <span class="eta-badge">🛵 騎車約 ${ex.eta_moto} 分鐘</span>
-                                <span class="eta-badge">🚊 大眾運輸約 ${ex.eta_transit} 分鐘</span>
-                            </div>
-                        </div>
-                        <div class="btn-group">
-                            <button class="detail-btn" onclick="openModal(${index})">ℹ️ 詳情與評論</button>
-                            <button class="nav-btn" onclick="startNavigation(${index})">🗺️ 地圖導航</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function startNavigation(index) {
-            const ex = allExhibitions[index];
-            const destinationQuery = ex.location + " " + ex.address;
-            const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${encodeURIComponent(destinationQuery)}`;
-            window.open(mapUrl, '_blank');
-        }
-
-        function openModal(index) {
-            const ex = allExhibitions[index];
-            currentSelectedTitle = ex.title;
-            document.getElementById('modal-title').innerText = ex.title;
-            document.getElementById('modal-info').innerHTML = `🏛️ 展出展館：${ex.location}<br>🚗 開車約 ${ex.eta_car} 分 / 🛵 騎車約 ${ex.eta_moto} 分 / 🚊 大眾運輸約 ${ex.eta_transit} 分<br>💵 門票價格：${ex.price === 0 ? '免費參觀' : ex.price + ' 元'}`;
-            document.getElementById('modal-desc').innerText = ex.description;
-            document.getElementById('modal-reviews').innerText = ex.reviews.join("\n\n");
-            document.getElementById('review-comment').value = "";
-            setRating(5); 
-            document.getElementById('detail-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
-
-        function setRating(rating) {
-            currentSelectedRating = rating;
-            const stars = document.querySelectorAll('.star');
-            stars.forEach(star => {
-                const val = parseInt(star.getAttribute('data-value'));
-                if (val <= rating) star.classList.add('active');
-                else star.classList.remove('active');
-            });
-        }
-
-        // 🌟 核心修改 2：送出評論從本地改成連線到 Render 雲端 API
-        function submitReview() {
-            const commentText = document.getElementById('review-comment').value.trim();
-            if(!commentText) { alert("請輸入評論內容！"); return; }
-
-            fetch('https://taipei-exhi-api.onrender.com/api/review', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: currentSelectedTitle, rating: currentSelectedRating, comment: commentText })
-            })
-            .then(res => res.json())
-            .then(result => {
-                alert(result.message);
-                if(result.status === "success") { closeModal(); loadData(); }
-            })
-            .catch(() => { alert("上傳失敗，請檢查網路連線或伺服器狀態。"); });
-        }
-
-        function togglePriceSlider() {
-            const costType = document.getElementById('filter-cost-type').value;
-            const sliderGroup = document.getElementById('price-slider-group');
-            
-            if (costType === "付費") {
-                sliderGroup.style.display = "block";
-            } else {
-                sliderGroup.style.display = "none";
-            }
-            applyFilters();
-        }
-
-        function applyFilters() {
-            const status = document.getElementById('filter-status').value;
-            const category = document.getElementById('filter-category').value;
-            const costType = document.getElementById('filter-cost-type').value;
-            const maxPrice = parseInt(document.getElementById('filter-price').value);
-
-            const filtered = allExhibitions.filter(ex => {
-                const matchStatus = (status === "全部" || ex.status === status);
-                const matchCat = (category === "全部" || ex.category === category);
-                
-                let matchPrice = true;
-                if (costType === "免費") {
-                    matchPrice = (ex.price === 0);
-                } else if (costType === "付費") {
-                    matchPrice = (ex.price > 0 && ex.price <= maxPrice);
-                }
-
-                return matchStatus && matchCat && matchPrice;
-            });
-            renderCards(filtered);
-        }
-
-        function updatePriceLabel() { document.getElementById('price-label').innerText = document.getElementById('filter-price').value; }
-        
-        function pickRandom() {
-            const status = document.getElementById('filter-status').value;
-            const category = document.getElementById('filter-category').value;
-            const costType = document.getElementById('filter-cost-type').value;
-            const maxPrice = parseInt(document.getElementById('filter-price').value);
-
-            const filtered = allExhibitions.filter(ex => {
-                const matchStatus = (status === "全部" || ex.status === status);
-                const matchCat = (category === "全部" || ex.category === category);
-                
-                let matchPrice = true;
-                if (costType === "免費") {
-                    matchPrice = (ex.price === 0);
-                } else if (costType === "付費") {
-                    matchPrice = (ex.price > 0 && ex.price <= maxPrice);
-                }
-
-                return matchStatus && matchCat && matchPrice;
-            });
-
-            if (filtered.length === 0) {
-                alert("😢 目前的篩選條件下沒有任何展覽，沒辦法抽籤喔！");
+            if(data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400 text-sm">目前沒有任何符合條件的展覽資料喔 🏖️</div>`;
                 return;
             }
 
-            const randomIndex = Math.floor(Math.random() * filtered.length);
-            const luckyExhibition = filtered[randomIndex];
-            renderCards([luckyExhibition]);
+            data.forEach(ex => {
+                // 手機版：左圖右字 (flex-row)，精簡間距與高度，大拇指滑起來極度舒適
+                // 桌機版：恢復成大圖在上 (md:flex-col)，呈現完整大器感
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-gray-100 p-3 shadow-xs flex flex-row md:flex-col gap-3 active:scale-[0.99] transition-all duration-200";
+                
+                // 處理評分顯示
+                const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg}` : '★ 暫無評分';
+
+                card.innerHTML = `
+                    <div class="relative w-24 h-24 min-w-24 md:w-full md:h-44 bg-gray-100 rounded-xl overflow-hidden shrink-0">
+                        <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
+                        <span class="absolute top-1 left-1 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-[10px] px-1.5 py-0.5 rounded-md">
+                            ${ratingText}
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col justify-between flex-1 min-w-0">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900 truncate mb-0.5" title="${ex.title}">${ex.title}</h3>
+                            <p class="text-xs text-gray-400 font-medium truncate mb-2">
+                                <i class="fa-solid fa-map-pin text-gray-300 mr-1"></i>${ex.location || '雙北展覽館'}
+                            </p>
+                        </div>
+                        
+                        <div class="mt-auto">
+                            <div class="flex items-center justify-between md:hidden bg-indigo-50/50 px-2 py-1 rounded-lg">
+                                <span class="text-xs text-indigo-600 font-bold"><i class="fa-solid fa-car mr-1"></i>車程 ${ex.eta_car || '--'} 分鐘</span>
+                                <span class="text-[11px] font-extrabold text-gray-400">⚡ 最快抵達</span>
+                            </div>
+
+                            <div class="hidden md:grid grid-cols-3 gap-1 bg-gray-50 p-2 rounded-xl text-center text-xs text-gray-500">
+                                <div><i class="fa-solid fa-car text-blue-500 mb-0.5 block"></i>開車 ${ex.eta_car}分</div>
+                                <div><i class="fa-solid fa-motorcycle text-amber-500 mb-0.5 block"></i>機車 ${ex.eta_moto}分</div>
+                                <div><i class="fa-solid fa-train-subway text-emerald-500 mb-0.5 block"></i>捷運 ${ex.eta_transit}分</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 快篩標籤按鈕切換邏輯
+        function filterExhibitions(type) {
+            // 切換按鈕亮起狀態
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.className = "filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all");
+            event.currentTarget.className = "filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all";
+
+            // 執行篩選排序
+            let filtered = [...rawData];
+            if (type === 'near') {
+                // 依據車程時間由短到長排序 (離我最近)
+                filtered.sort((a, b) => (a.eta_car || 999) - (b.eta_car || 999));
+            } else if (type === 'rating') {
+                // 依據評分高低排序
+                filtered.sort((a, b) => {
+                    const rA = typeof a.rating_avg === 'number' ? a.rating_avg : 0;
+                    const rB = typeof b.rating_avg === 'number' ? b.rating_avg : 0;
+                    return rB - rA;
+                });
+            }
+            renderDOM(filtered);
+        }
+
+        // 觸發後端爬蟲更新資料
+        async function triggerCrawler() {
+            if(!confirm("確定要現在啟動雲端自動爬蟲更新資料庫嗎？")) return;
+            showLoading(true);
+            try {
+                const res = await fetch(`${API_BASE}/api/trigger-crawler`);
+                const json = await res.json();
+                alert(json.message);
+                fetchData(); // 爬完自動重新抓取
+            } catch (err) {
+                alert("觸發爬蟲失敗，後端可能正在忙碌中。");
+                showLoading(false);
+            }
+        }
+
+        // 控制加載中狀態切換
+        function showLoading(isLoading) {
+            const loader = document.getElementById('loading');
+            const list = document.getElementById('exhibition-list');
+            if (isLoading) {
+                loader.classList.remove('hidden');
+                list.classList.add('hidden');
+            } else {
+                loader.classList.add('hidden');
+                list.classList.remove('hidden');
+            }
         }
     </script>
 </body>
