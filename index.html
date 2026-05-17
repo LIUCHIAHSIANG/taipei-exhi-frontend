@@ -73,7 +73,7 @@
     </main>
 
     <div id="review-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                 <h2 id="modal-title" class="text-lg font-bold text-gray-900 flex items-center gap-1.5 pr-4">展覽詳情</h2>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
@@ -164,8 +164,7 @@
                 }
             } catch (err) {
                 showErrorState("後端伺服器冷啟動中！正在幫您自動重試喚醒，請稍候...");
-                // 觸發自動重試機制（5秒後再嘗試一次，直到醒來為止）
-                setTimeout(fetchData, 5000);
+                setTimeout(fetchData, 4000);
             }
         }
 
@@ -186,4 +185,200 @@
         function showErrorState(message) {
             const status = document.getElementById('loading-status');
             const tip = document.getElementById('render-tip');
-            if(status) status.innerHTML = `<span class="text
+            if(status) status.innerHTML = `<span class="text-rose-500"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${message}</span>`;
+            if(tip) tip.classList.remove('hidden');
+        }
+
+        function renderDOM(data) {
+            const container = document.getElementById('exhibition-list');
+            container.innerHTML = "";
+
+            if(data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400 text-sm">目前沒有展覽資料喔 🏖️</div>`;
+                return;
+            }
+
+            data.forEach((ex, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
+                
+                const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
+                
+                // 🛠️ 徹底修復：將原本寫錯的 0{...} 改回正確的模板字串 ${...}
+                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
+
+                card.innerHTML = `
+                    <div class="relative w-24 h-24 min-w-24 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
+                        <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
+                        <span class="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-[10px] md:text-xs px-1.5 py-0.5 rounded-sm">
+                            ${ratingText}
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col justify-between flex-1 min-w-0 h-full">
+                        <div>
+                            <h3 class="text-sm md:text-lg font-bold text-gray-900 truncate mb-0.5" title="${ex.title}">${ex.title}</h3>
+                            <p class="text-[11px] md:text-sm text-gray-400 font-medium truncate mb-2">
+                                <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.location || '雙北展覽館'}
+                            </p>
+                            <p class="text-xs text-gray-500 line-clamp-2 mb-2 hidden sm:block">
+                                ${ex.description || '歡迎來到雙北展覽資訊整合平台，點擊詳情查看更多關於本展覽的完整介紹、展出時間與精彩看點。'}
+                            </p>
+                        </div>
+                        
+                        <div class="space-y-2 mt-auto">
+                            <div class="grid grid-cols-3 gap-1 bg-gray-50 p-1.5 rounded-lg text-center text-[10px] md:text-xs text-gray-600">
+                                <div><i class="fa-solid fa-car text-blue-500 mr-0.5"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car || '--'}分</span></div>
+                                <div class="border-x border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mr-0.5"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto || '--'}分</span></div>
+                                <div><i class="fa-solid fa-train-subway text-emerald-500 mr-0.5"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
+                            </div>
+
+                            <div class="flex gap-1.5">
+                                <button onclick="openModalByIndex(this)" data-index="${index}" class="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-[11px] md:text-xs py-1.5 rounded-lg transition-all cursor-pointer">
+                                    <i class="fa-solid fa-circle-info mr-0.5"></i>詳情與評論 (${(ex.reviews || []).length})
+                                </button>
+                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] md:text-xs px-2.5 py-1.5 rounded-lg text-center flex items-center justify-center gap-0.5 cursor-pointer">
+                                    <i class="fa-solid fa-location-arrow"></i>導航
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 🎲 隨機推薦系統
+        function getRandomExhibition() {
+            if (rawData.length === 0) {
+                alert("目前沒有展覽資料可以抽取喔！請確認伺服器是否已開啟。");
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * rawData.length);
+            openModalDetails(randomIndex, true); 
+        }
+
+        function openModalByIndex(button) {
+            const index = parseInt(button.getAttribute('data-index'));
+            openModalDetails(index, false);
+        }
+
+        // 📥 視窗渲染引擎
+        function openModalDetails(index, isRandom = false) {
+            const target = rawData[index];
+            if (!target) return;
+
+            currentActiveTitle = target.title;
+            
+            // 🎯 隨機抽籤標題修正：確保完美顯示「這次推薦你看看這個展覽喔!」
+            document.getElementById('modal-title').innerHTML = isRandom 
+                ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
+                : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
+
+            // 🛠 *徹底修復：此處的 0{...} 也全部改回正確的模板字串了！*
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
+            
+            document.getElementById('modal-info-container').innerHTML = `
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <h3 class="text-base md:text-lg font-bold text-gray-900">${target.title}</h3>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-map-pin text-rose-500 mr-1"></i>${target.location || '雙北展覽館'}</p>
+                        </div>
+                        <span class="bg-amber-400 text-gray-900 font-black text-xs px-2 py-1 rounded-md shrink-0">
+                            ★ ${(typeof target.rating_avg === 'number' ? target.rating_avg : 0).toFixed(1)}
+                        </span>
+                    </div>
+                    
+                    <div class="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-2xs">
+                        <b class="text-gray-800 block mb-1">📝 展覽詳細介紹：</b>
+                        ${target.description || '本展覽為當季雙北熱門亮點，現場展出豐富作品與互動裝置，非常適合安排行程前往探索，體驗藝文與知性之美。'}
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">
+                        <div><i class="fa-solid fa-car text-blue-500 block mb-0.5 text-sm"></i>開車<br><span class="font-bold text-gray-900">${target.eta_car || '--'} 分</span></div>
+                        <div class="border-x border-gray-200"><i class="fa-solid fa-motorcycle text-amber-500 block mb-0.5 text-sm"></i>機車<br><span class="font-bold text-gray-900">${target.eta_moto || '--'} 分</span></div>
+                        <div><i class="fa-solid fa-train-subway text-emerald-500 block mb-0.5 text-sm"></i>捷運<br><span class="font-bold text-gray-900">${target.eta_transit || '--'} 分</span></div>
+                    </div>
+
+                    <a href="${mapUrl}" target="_blank" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-location-arrow animate-pulse"></i> 啟動 Google Maps 地圖導航
+                    </a>
+                </div>
+            `;
+
+            const reviews = target.reviews || [];
+            const reviewsContainer = document.getElementById('modal-reviews-container');
+            reviewsContainer.innerHTML = "";
+
+            if (reviews.length === 0) {
+                reviewsContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-2">目前此展覽還沒有大眾點評，快來發表第一個評分吧！</p>`;
+            } else {
+                reviews.forEach(r => {
+                    const rDiv = document.createElement('div');
+                    rDiv.className = "bg-gray-50 p-3 rounded-xl text-sm border border-gray-100 shadow-2xs";
+                    if (typeof r === 'object' && r !== null) {
+                        const stars = '⭐'.repeat(r.rating || 5);
+                        rDiv.innerHTML = `<div class="text-[10px] text-amber-500 font-bold mb-0.5">${stars}</div><div class="text-gray-700 font-medium">${r.comment || ''}</div>`;
+                    } else {
+                        rDiv.innerHTML = `<div class="text-gray-700 font-medium">${r}</div>`;
+                    }
+                    reviewsContainer.appendChild(rDiv);
+                });
+            }
+
+            const modalBody = document.querySelector('#review-modal .overflow-y-auto');
+            if (modalBody) modalBody.scrollTop = 0;
+
+            document.getElementById('review-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('review-modal').classList.add('hidden');
+            document.getElementById('review-form').reset();
+        }
+
+        async function submitReview(event) {
+            event.preventDefault();
+            const rating = parseInt(document.getElementById('form-rating').value);
+            const comment = document.getElementById('form-comment').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/review`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: currentActiveTitle,
+                        rating: rating,
+                        comment: comment
+                    })
+                });
+                const json = await res.json();
+                if (json.status === "success") {
+                    alert("評論與評分發表成功！");
+                    closeModal();
+                    fetchData(); 
+                } else {
+                    alert("發表失敗: " + json.message);
+                }
+            } catch (err) {
+                alert("連線後端失敗，無法儲存評論。");
+            }
+        }
+
+        function filterExhibitions(btnElement, type) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.className = "filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all");
+            btnElement.className = "filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all";
+
+            let filtered = [...rawData];
+            if (type === 'near') {
+                filtered.sort((a, b) => (a.eta_car || 999) - (b.eta_car || 999));
+            } else if (type === 'rating') {
+                filtered.sort((a, b) => (typeof b.rating_avg === 'number' ? b.rating_avg : 0) - (typeof a.rating_avg === 'number' ? a.rating_avg : 0));
+            }
+            renderDOM(filtered);
+        }
+    </script>
+</body>
+</html>
