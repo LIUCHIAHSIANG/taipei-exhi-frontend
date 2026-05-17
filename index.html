@@ -59,7 +59,7 @@
             <div class="space-y-2">
                 <p id="loading-status" class="text-base font-bold text-gray-800">正在請求您的位置權限...</p>
                 <p id="loading-desc" class="text-xs text-gray-500 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    若無跳出提示或等待過久，系統將在幾秒後自動進入畫面。
+                    若無跳出提示或等待過久，系統將在 <span id="countdown" class="text-amber-600 font-bold">5</span> 秒後自動進入畫面。
                 </p>
                 <p id="render-tip" class="text-[11px] text-amber-600 hidden font-medium">
                     ⚠️ 偵測到雲端伺服器睡眠中，正在進行冷啟動喚醒，請耐心等待...
@@ -114,26 +114,56 @@
         let userLon = 121.5170;
         let currentActiveTitle = ""; 
         let fetchRetryCount = 0;
-        const MAX_RETRIES = 2; // 最多重試 2 次
+        const MAX_RETRIES = 2;
+        let locationResolved = false; // 追蹤定位是否已經有結果
 
         window.onload = function() {
-            // 嘗試獲取定位，並加上 5 秒超時機制 (解決手機沒反應卡死的問題)
+            // 核彈級防呆：倒數 5 秒，不管瀏覽器定位是不是卡死，時間到直接強迫進入系統
+            let secondsLeft = 5;
+            const countdownEl = document.getElementById('countdown');
+            const countdownInterval = setInterval(() => {
+                secondsLeft--;
+                if(countdownEl) countdownEl.innerText = secondsLeft;
+            }, 1000);
+
+            const fallbackTimer = setTimeout(() => {
+                if (!locationResolved) {
+                    locationResolved = true;
+                    clearInterval(countdownInterval);
+                    document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>定位超時 (預設台北車站)`;
+                    fetchData(); // 強制啟動抓取資料
+                }
+            }, 5000);
+
             if (navigator.geolocation) {
+                // 加入 enableHighAccuracy: true 盡可能提高電腦版準確度
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
+                        if (locationResolved) return;
+                        locationResolved = true;
+                        clearTimeout(fallbackTimer);
+                        clearInterval(countdownInterval);
                         userLat = position.coords.latitude;
                         userLon = position.coords.longitude;
                         document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-crosshairs text-emerald-500 mr-1"></i>已精準定位`;
                         fetchData();
                     },
                     (error) => {
-                        document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)`;
+                        if (locationResolved) return;
+                        locationResolved = true;
+                        clearTimeout(fallbackTimer);
+                        clearInterval(countdownInterval);
+                        document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>無法定位 (預設台北車站)`;
                         fetchData(); 
                     },
-                    { timeout: 5000 } // 超過 5 秒沒拿到定位，直接報錯並執行上方 error 回呼
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
             } else {
-                document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)`;
+                if (locationResolved) return;
+                locationResolved = true;
+                clearTimeout(fallbackTimer);
+                clearInterval(countdownInterval);
+                document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>不支援定位 (預設台北車站)`;
                 fetchData();
             }
         };
@@ -147,7 +177,7 @@
                 if (json.status === "success" && json.data) {
                     rawData = json.data;
                     renderDOM(rawData);
-                    showLoading(false); // 🔑 就是少了這一行！現在加上去，成功抓到資料就會關閉圈圈。
+                    showLoading(false); 
                     fetchRetryCount = 0; 
                 } else {
                     throw new Error(json.message || "資料格式不符");
@@ -161,35 +191,29 @@
                     if(status) status.innerHTML = `<span class="text-amber-500">正在等待伺服器喚醒 (第 ${fetchRetryCount} 次重試)...</span>`;
                     setTimeout(fetchData, 4000);
                 } else {
-                    // 如果 API 真的掛了，直接塞入假資料，保證能看到畫面！
                     document.getElementById('loading-status').innerHTML = `<span class="text-rose-500">伺服器無回應，已切換至「離線測試模式」</span>`;
                     loadMockData();
                 }
             }
         }
 
-        // 當 API 完全壞掉時的備用假資料
         function loadMockData() {
             rawData = [
                 {
-                    title: "【離線測試】2026 台北藝術雙年展",
-                    location: "台北市立美術館",
+                    title: "【離線測試】2026 台北藝術雙年展", location: "台北市立美術館",
                     description: "此為後端 API 無法連線時自動啟用的測試資料。展示基本的排版與功能是否正常。",
-                    eta_car: 15, eta_moto: 10, eta_transit: 25,
-                    rating_avg: 4.8,
+                    eta_car: 15, eta_moto: 10, eta_transit: 25, rating_avg: 4.8,
                     reviews: [{ rating: 5, comment: "這是一個測試評論！" }]
                 },
                 {
-                    title: "【離線測試】印象派光影沉浸展",
-                    location: "松山文創園區",
+                    title: "【離線測試】印象派光影沉浸展", location: "松山文創園區",
                     description: "測試資料二號。您可以看到無論伺服器狀況如何，畫面依然能順利跑出來了。",
-                    eta_car: 22, eta_moto: 18, eta_transit: 30,
-                    rating_avg: 4.1,
+                    eta_car: 22, eta_moto: 18, eta_transit: 30, rating_avg: 4.1,
                     reviews: []
                 }
             ];
             renderDOM(rawData);
-            showLoading(false); // 強制關閉轉圈圈！
+            showLoading(false);
         }
 
         function showLoading(isLoading) {
@@ -202,8 +226,8 @@
                 if(list) list.classList.add('hidden');
             } else {
                 if(loader) loader.classList.add('hidden');
-                if(icon) icon.classList.remove('animate-spin'); // 停止動畫
-                if(list) list.classList.remove('hidden'); // 顯示展覽列表
+                if(icon) icon.classList.remove('animate-spin');
+                if(list) list.classList.remove('hidden');
             }
         }
 
@@ -221,7 +245,9 @@
                 card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
-                const mapUrl = `http://googleusercontent.com/maps.google.com/${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
+                
+                // 🗺️ 真正標準的 Google Maps 導航搜尋網址
+                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
                     <div class="relative w-24 h-24 min-w-24 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
@@ -238,7 +264,7 @@
                                 <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.location || '雙北展覽館'}
                             </p>
                             <p class="text-xs text-gray-500 line-clamp-2 mb-2 hidden sm:block">
-                                ${ex.description || '歡迎來到雙北展覽資訊整合平台，點擊詳情查看更多關於本展覽的完整介紹、展出時間與精彩看點。'}
+                                ${ex.description || '點擊詳情查看更多關於本展覽的完整介紹。'}
                             </p>
                         </div>
                         
@@ -288,7 +314,7 @@
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
 
-            const mapUrl = `http://googleusercontent.com/maps.google.com/${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
                 <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
