@@ -134,7 +134,7 @@
         const API_BASE = "https://taipei-exhi-api.onrender.com";
         let rawData = [];
         
-        // 🎯 定位失敗時的預設經緯度：改回「台北車站」
+        // 🎯 定位失敗時的預設經緯度：台北車站
         let userLat = 25.0478; 
         let userLon = 121.5170;
         
@@ -224,7 +224,7 @@
             }
         }
 
-        // 🎯 離線測試資料：如你所願，保留「南港展覽館」
+        // 🎯 離線測試資料：南港展覽館
         function loadMockData() {
             rawData = [
                 {
@@ -273,7 +273,11 @@
                 card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
-                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
+                
+                // 💡 導航升級：使用 Google Maps Directions API 格式
+                // origin: 帶入使用者的經緯度 (userLat, userLon)
+                // destination: 帶入展覽名稱與地址
+                const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
                     <div class="relative w-full h-36 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
@@ -339,7 +343,8 @@
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> 展覽總覽`;
 
-            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
+            // 💡 導航升級：彈出視窗的按鈕也套用自動帶入起點與終點的格式
+            const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
@@ -359,7 +364,7 @@
                     </div>
 
                     <a href="${mapUrl}" target="_blank" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-lg text-sm text-center flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer">
-                        <i class="fa-solid fa-location-arrow animate-pulse"></i> 前往 Google Maps 地圖導航
+                        <i class="fa-solid fa-location-arrow animate-pulse"></i> 開始 Google Maps 地圖導航
                     </a>
                 </div>
             `;
