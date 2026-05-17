@@ -42,7 +42,7 @@
                         <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
                     </button>
                 </div>
-                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 text-white w-8 h-8 rounded-full shadow-md shrink-0 active:scale-90 transition-all" title="隨機推薦">
+                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 text-white w-8 h-8 rounded-full shadow-md shrink-0 active:scale-90 transition-all" title="隨機推薦展覽">
                     <i class="fa-solid fa-dice text-sm"></i>
                 </button>
             </div>
@@ -51,13 +51,16 @@
 
     <main class="max-w-6xl mx-auto px-4 py-6">
         
-        <div id="loading" class="flex flex-col items-center justify-center py-16 px-4 gap-4 text-center max-w-md mx-auto bg-white rounded-2xl border border-gray-100 shadow-xs my-10">
+        <div id="loading" class="flex flex-col items-center justify-center py-12 px-4 gap-4 text-center max-w-md mx-auto bg-white rounded-2xl border border-gray-100 shadow-xs my-10">
             <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <div class="space-y-2">
-                <p class="text-base font-bold text-gray-800">正在請求您的位置權限...</p>
+                <p id="loading-status" class="text-base font-bold text-gray-800">正在請求您的位置權限...</p>
                 <p class="text-xs text-gray-500 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    💡 <b>為什麼需要定位？</b><br>
-                    本平台需要存取您的 GPS 位置，以便為您即時、精準地計算從您目前所在地前往雙北各個展覽館的<b>開車、機車與捷運預估時間</b>。請在瀏覽器彈出的提示中點選「允許」。
+                    💡 <b>為什麼需要定位權限？</b><br>
+                    本平台需要存取您的 GPS 位置，以便為您即時計算從您當前所在地前往雙北各個展覽館的<b>開車、機車與捷運預估交通時間</b>。請在瀏覽器提示中點選「允許」。
+                </p>
+                <p id="render-tip" class="text-[11px] text-amber-600 hidden font-medium">
+                    ⚠️ 偵測到雲端伺服器睡眠中，正在進行冷啟動喚醒，請耐心等待約 30 秒...
                 </p>
             </div>
         </div>
@@ -74,12 +77,12 @@
             </div>
             <div class="p-5 overflow-y-auto space-y-5 flex-1">
                 <div>
-                    <h4 class="text-sm font-bold text-gray-500 mb-2 tracking-wide"><i class="fa-solid fa-comments mr-1 text-indigo-500"></i>大家怎麼說</h4>
+                    <h4 class="text-sm font-bold text-gray-500 mb-2 tracking-wide"><i class="fa-solid fa-comments mr-1 text-indigo-500"></i>大眾評價與心得</h4>
                     <div id="modal-reviews-container" class="space-y-2"></div>
                 </div>
                 <hr class="border-gray-100">
                 <form id="review-form" onsubmit="submitReview(event)" class="space-y-3">
-                    <h4 class="text-sm font-bold text-gray-500 tracking-wide"><i class="fa-solid fa-pen-to-square mr-1 text-amber-500"></i>發表您的評論</h4>
+                    <h4 class="text-sm font-bold text-gray-500 tracking-wide"><i class="fa-solid fa-pen-to-square mr-1 text-amber-500"></i>發表您的評分與評論</h4>
                     <div>
                         <label class="block text-xs text-gray-400 font-bold mb-1">評分星級</label>
                         <select id="form-rating" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm font-medium focus:outline-indigo-500">
@@ -95,7 +98,7 @@
                         <textarea id="form-comment" rows="3" required placeholder="分享您去看展的心得與建議..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500"></textarea>
                     </div>
                     <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-xs cursor-pointer">
-                        提交評論
+                        提交評論與星級
                     </button>
                 </form>
             </div>
@@ -115,11 +118,21 @@
     <script>
         const API_BASE = "https://taipei-exhi-api.onrender.com";
         let rawData = [];
-        let userLat = 25.0478; // 預設台北車站
+        let userLat = 25.0478; 
         let userLon = 121.5170;
         let currentActiveTitle = ""; 
 
         window.onload = function() {
+            // 設定一個計時器，如果 4 秒內沒拿到資料，高機率是 Render 伺服器在睡覺，跳出提示
+            setTimeout(() => {
+                if (rawData.length === 0) {
+                    const tip = document.getElementById('render-tip');
+                    if(tip) tip.classList.remove('hidden');
+                    const status = document.getElementById('loading-status');
+                    if(status) status.innerText = "正在連線並喚醒雲端伺服器...";
+                }
+            }, 4000);
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -151,7 +164,7 @@
                     alert("後端錯誤: " + json.message);
                 }
             } catch (err) {
-                alert("無法連線至後端伺服器！");
+                alert("無法連線至後端伺服器！可能正在開機中，請稍後再試。");
             } finally {
                 showLoading(false);
             }
@@ -166,13 +179,14 @@
                 return;
             }
 
-            data.forEach((ex) => {
+            data.forEach((ex, index) => {
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl md:rounded-2xl border border-gray-100 p-3 md:p-5 shadow-sm flex flex-row md:flex-col gap-4 hover:shadow-md transition-all duration-300";
                 
-                const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg}` : '★ 暫無評分';
+                const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
+                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
-                // 💡 終極修復：不再在 HTML 屬性裡塞複雜字串，直接用 HTML5 data 屬性存入展覽名稱
+                // 💡 核心技術修正：全面改用 data-index 綁定陣列索引，徹底解決特殊符號造成的 JS 閃退死機
                 card.innerHTML = `
                     <div class="relative w-24 h-24 min-w-24 md:w-full md:h-48 bg-gray-100 rounded-lg md:rounded-xl overflow-hidden shrink-0">
                         <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
@@ -190,24 +204,32 @@
                         </div>
                         
                         <div class="mt-auto space-y-2">
-                            <div class="flex items-center justify-between md:hidden gap-2">
-                                <div class="bg-indigo-50/60 px-2 py-1.5 rounded-lg flex-1 text-xs text-indigo-600 font-bold">
-                                    <i class="fa-solid fa-car mr-1"></i>車程 ${ex.eta_car || '--'} 分鐘
+                            <div class="flex items-center justify-between md:hidden gap-1.5">
+                                <div class="bg-indigo-50/60 px-2 py-1.5 rounded-lg flex-1 text-[11px] text-indigo-600 font-bold truncate">
+                                    <i class="fa-solid fa-car mr-0.5"></i>${ex.eta_car || '--'}分
                                 </div>
-                                <button onclick="openModalByElement(this)" data-title="${ex.title}" class="bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">
-                                    <i class="fa-regular fa-comment-dots mr-1"></i>評論 (${(ex.reviews || []).length})
+                                <button onclick="openModalByIndex(this)" data-index="${index}" class="bg-gray-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md shrink-0 cursor-pointer">
+                                    <i class="fa-regular fa-comment-dots mr-0.5"></i>評論(${(ex.reviews || []).length})
                                 </button>
+                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md shrink-0 text-center cursor-pointer">
+                                    <i class="fa-solid fa-location-arrow mr-0.5"></i>導航
+                                </a>
                             </div>
 
                             <div class="hidden md:grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-xl text-center text-xs text-gray-600">
-                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-car text-blue-500 mb-1 block text-sm"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car}分</span></div>
-                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mb-1 block text-sm"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto}分</span></div>
-                                <div><i class="fa-solid fa-train-subway text-emerald-500 mb-1 block text-sm"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit}分</span></div>
+                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-car text-blue-500 mb-1 block text-sm"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car || '--'}分</span></div>
+                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mb-1 block text-sm"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto || '--'}分</span></div>
+                                <div><i class="fa-solid fa-train-subway text-emerald-500 mb-1 block text-sm"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
                             </div>
 
-                            <button onclick="openModalByElement(this)" data-title="${ex.title}" class="hidden md:block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer">
-                                <i class="fa-regular fa-comment-dots mr-1"></i>查看與發表評論 (${(ex.reviews || []).length})
-                            </button>
+                            <div class="hidden md:flex gap-2">
+                                <button onclick="openModalByIndex(this)" data-index="${index}" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer">
+                                    <i class="fa-regular fa-comment-dots mr-1"></i>查看詳情與評論 (${(ex.reviews || []).length})
+                                </button>
+                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs px-4 py-2 rounded-xl text-center flex items-center justify-center gap-1 cursor-pointer">
+                                    <i class="fa-solid fa-location-arrow"></i>開啟導航
+                                </a>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -215,46 +237,44 @@
             });
         }
 
-        // 🎲 核心修復：不論手機或電腦，點擊隨機推薦都能完美呼叫
+        // 🎲 隨機抽取系統
         function getRandomExhibition() {
             if (rawData.length === 0) {
-                alert("目前沒有展覽資料可以推薦喔！");
+                alert("目前沒有展覽資料可以抽取喔！");
                 return;
             }
             const randomIndex = Math.floor(Math.random() * rawData.length);
-            const target = rawData[randomIndex];
-            openModalByName(target.title);
+            openModalDetails(randomIndex);
         }
 
-        // 📥 核心修復：透過按鈕上的 data-title 屬性開啟視窗，完美避開引號衝突 Bug
-        function openModalByElement(button) {
-            const title = button.getAttribute('data-title');
-            openModalByName(title);
+        function openModalByIndex(button) {
+            const index = parseInt(button.getAttribute('data-index'));
+            openModalDetails(index);
         }
 
-        // 渲染 Modal 的共用底層核心
-        function openModalByName(title) {
-            const target = rawData.find(item => item.title === title);
+        // 📥 詳細資訊、評論與評分系統渲染核心
+        function openModalDetails(index) {
+            const target = rawData[index];
             if (!target) return;
 
-            currentActiveTitle = title;
-            document.getElementById('modal-title').innerText = title;
+            currentActiveTitle = target.title;
+            document.getElementById('modal-title').innerText = target.title;
             
             const reviews = target.reviews || [];
             const reviewsContainer = document.getElementById('modal-reviews-container');
             reviewsContainer.innerHTML = "";
 
             if (reviews.length === 0) {
-                reviewsContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-2">目前還沒有人留下心得，快來當第一個吧！</p>`;
+                reviewsContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-2">目前此展覽還沒有大眾點評，快來發表第一個評分吧！</p>`;
             } else {
                 reviews.forEach(r => {
                     const rDiv = document.createElement('div');
-                    rDiv.className = "bg-gray-50 p-3 rounded-xl text-sm";
+                    rDiv.className = "bg-gray-50 p-3 rounded-xl text-sm border border-gray-100 shadow-2xs";
                     if (typeof r === 'object' && r !== null) {
                         const stars = '⭐'.repeat(r.rating || 5);
-                        rDiv.innerHTML = `<div class="text-xs text-amber-500 font-bold mb-0.5">${stars}</div><div class="text-gray-700">${r.comment || ''}</div>`;
+                        rDiv.innerHTML = `<div class="text-[10px] text-amber-500 font-bold mb-0.5">${stars}</div><div class="text-gray-700 font-medium">${r.comment || ''}</div>`;
                     } else {
-                        rDiv.innerHTML = `<div class="text-gray-700">${r}</div>`;
+                        rDiv.innerHTML = `<div class="text-gray-700 font-medium">${r}</div>`;
                     }
                     reviewsContainer.appendChild(rDiv);
                 });
@@ -268,6 +288,7 @@
             document.getElementById('review-form').reset();
         }
 
+        // 📥 評分與評論提交系統
         async function submitReview(event) {
             event.preventDefault();
             const rating = parseInt(document.getElementById('form-rating').value);
@@ -285,7 +306,7 @@
                 });
                 const json = await res.json();
                 if (json.status === "success") {
-                    alert("評論發表成功！");
+                    alert("評論與評分發表成功！");
                     closeModal();
                     fetchData(); 
                 } else {
@@ -296,7 +317,6 @@
             }
         }
 
-        // 核心修復：傳入 btn 元素，徹底解決手機端標籤切換無反應的 Bug
         function filterExhibitions(btnElement, type) {
             const buttons = document.querySelectorAll('.filter-btn');
             buttons.forEach(btn => btn.className = "filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all");
@@ -329,11 +349,11 @@
             const loader = document.getElementById('loading');
             const list = document.getElementById('exhibition-list');
             if (isLoading) {
-                loader.classList.remove('hidden');
-                list.classList.add('hidden');
+                if(loader) loader.classList.remove('hidden');
+                if(list) list.classList.add('hidden');
             } else {
-                loader.classList.add('hidden');
-                list.classList.remove('hidden');
+                if(loader) loader.classList.add('hidden');
+                if(list) list.classList.remove('hidden');
             }
         }
     </script>
