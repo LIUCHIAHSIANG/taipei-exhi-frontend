@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>雙北展覽資訊整合平台</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link class="flex" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         * { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased pb-24 md:pb-12">
+<body class="bg-gray-50 text-gray-800 antialiased pb-12">
 
     <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-xs">
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2">
@@ -21,6 +21,9 @@
                     <i class="fa-solid fa-compass text-amber-500 mr-1"></i>雙北展覽資訊整合平台
                 </h1>
                 <div class="flex items-center gap-2">
+                    <button onclick="fetchData()" class="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-arrows-rotate"></i> 重新整理
+                    </button>
                     <button onclick="getRandomExhibition()" class="hidden md:flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all shadow-xs cursor-pointer">
                         <i class="fa-solid fa-dice animate-bounce"></i> 隨機推薦
                     </button>
@@ -30,7 +33,7 @@
                 </div>
             </div>
             
-            <div class="flex items-center justify-between gap-2 border-t border-gray-50 pt-1.5">
+            <div class="flex items-center justify-between gap-3 border-t border-gray-50 pt-1.5">
                 <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 flex-1">
                     <button onclick="filterExhibitions(this, 'all')" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all">
                         全部展覽
@@ -42,8 +45,8 @@
                         <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
                     </button>
                 </div>
-                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 text-white w-8 h-8 rounded-full shadow-md shrink-0 active:scale-90 transition-all" title="隨機推薦展覽">
-                    <i class="fa-solid fa-dice text-sm"></i>
+                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white w-11 h-11 rounded-full shadow-md shrink-0 active:scale-90 transition-all cursor-pointer" title="隨機推薦展覽">
+                    <i class="fa-solid fa-dice text-base"></i>
                 </button>
             </div>
         </div>
@@ -112,16 +115,6 @@
         </div>
     </div>
 
-    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-xl flex items-center gap-6 border border-white/10">
-        <button onclick="fetchData()" class="flex items-center gap-2 text-sm font-bold tracking-wide active:scale-95 transition-all cursor-pointer">
-            <i class="fa-solid fa-arrows-rotate text-emerald-400"></i>重新整理
-        </button>
-        <div class="w-px h-4 bg-white/20"></div>
-        <button onclick="triggerCrawler()" class="flex items-center gap-2 text-sm font-bold tracking-wide text-indigo-300 active:scale-95 transition-all cursor-pointer">
-            <i class="fa-solid fa-spider"></i>背景爬網
-        </button>
-    </div>
-
     <script>
         const API_BASE = "https://taipei-exhi-api.onrender.com";
         let rawData = [];
@@ -187,11 +180,11 @@
 
             data.forEach((ex, index) => {
                 const card = document.createElement('div');
-                // 💡 核心優化：不論手機或桌機，全面改為完美的「橫列式卡片 (flex-row)」
                 card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
-                // 修正為精確的原生 Google Maps 導航連結
+                
+                // 💡 修正後：高相容性 Google Maps 官方 API 地圖搜尋導航生成網址
                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
@@ -235,7 +228,7 @@
             });
         }
 
-        // 🎲 隨機抽取系統：重構為彈出精美展覽卡片與詳細資訊，不再直接逼使用者看評論
+        // 🎲 隨機推薦系統
         function getRandomExhibition() {
             if (rawData.length === 0) {
                 alert("目前沒有展覽資料可以抽取喔！");
@@ -250,21 +243,20 @@
             openModalDetails(index, false);
         }
 
-        // 📥 核心整合：詳細資訊、導航系統、隨機抽卡展示、評論大合一渲染引擎
+        // 📥 視窗渲染引擎
         function openModalDetails(index, isRandom = false) {
             const target = rawData[index];
             if (!target) return;
 
             currentActiveTitle = target.title;
             
-            // 動態調整標題（隨機抽中時展現驚喜特效）
             document.getElementById('modal-title').innerHTML = isRandom 
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 隨機推薦抽中卡片！` 
                 : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
 
+            // 💡 修正後：高相容性 Google Maps 官方 API 地圖搜尋導航生成網址
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
-            // 💡 補回詳細資訊區塊（包含完整的簡介、GPS 車程與地圖系統）
             document.getElementById('modal-info-container').innerHTML = `
                 <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
                     <div class="flex justify-between items-start gap-2">
@@ -279,7 +271,7 @@
                     
                     <div class="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-2xs">
                         <b class="text-gray-800 block mb-1">📝 展覽詳細介紹：</b>
-                        ${target.description || '本展覽為當季雙北最熱門亮點，現場展出豐富作品與互動裝置，非常適合安排行程前往探索，體驗藝文與知性之美。'}
+                        ${target.description || '本展覽為當季雙北熱門亮點，現場展出豐富作品與互動裝置，非常適合安排行程前往探索，體驗藝文與知性之美。'}
                     </div>
 
                     <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">
@@ -314,6 +306,10 @@
                     reviewsContainer.appendChild(rDiv);
                 });
             }
+
+            // 💡 解決手機版 UX 痛點：打開新視窗時，自動將內部滾動條重設回最頂端
+            const modalBody = document.querySelector('#review-modal .overflow-y-auto');
+            if (modalBody) modalBody.scrollTop = 0;
 
             document.getElementById('review-modal').classList.remove('hidden');
         }
@@ -363,20 +359,6 @@
                 filtered.sort((a, b) => (typeof b.rating_avg === 'number' ? b.rating_avg : 0) - (typeof a.rating_avg === 'number' ? a.rating_avg : 0));
             }
             renderDOM(filtered);
-        }
-
-        async function triggerCrawler() {
-            if(!confirm("確定要現在啟動雲端自動爬蟲更新資料庫嗎？")) return;
-            showLoading(true);
-            try {
-                const res = await fetch(`${API_BASE}/api/trigger-crawler`);
-                const json = await res.json();
-                alert(json.message);
-                fetchData();
-            } catch (err) {
-                alert("觸發爬蟲失敗。");
-                showLoading(false);
-            }
         }
 
         function showLoading(isLoading) {
