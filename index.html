@@ -45,7 +45,7 @@
                         <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
                     </button>
                 </div>
-                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white w-11 h-11 rounded-full shadow-md shrink-0 active:scale-90 transition-all cursor-pointer" title="隨機推薦展覽">
+                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white w-11 h-11 rounded-full shadow-md shrink-0 active:scale-90 transition-all cursor-pointer">
                     <i class="fa-solid fa-dice text-base"></i>
                 </button>
             </div>
@@ -59,11 +59,10 @@
             <div class="space-y-2">
                 <p id="loading-status" class="text-base font-bold text-gray-800">正在請求您的位置權限...</p>
                 <p id="loading-desc" class="text-xs text-gray-500 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    💡 <b>為什麼需要定位權限？</b><br>
-                    本平台需要存取您的 GPS 位置，以便為您即時計算從您當前所在地前往雙北各個展覽館的<b>開車、機車與捷運預估交通時間</b>。請在瀏覽器提示中點選「允許」。
+                    若無跳出提示或等待過久，系統將在幾秒後自動進入畫面。
                 </p>
                 <p id="render-tip" class="text-[11px] text-amber-600 hidden font-medium">
-                    ⚠️ 偵測到雲端伺服器睡眠中，正在進行冷啟動喚醒，請稍微耐心等待約 30 秒，切勿關閉網頁...
+                    ⚠️ 偵測到雲端伺服器睡眠中，正在進行冷啟動喚醒，請耐心等待...
                 </p>
             </div>
         </div>
@@ -79,22 +78,16 @@
                 <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-5 overflow-y-auto space-y-5 flex-1">
-                
                 <div id="modal-info-container"></div>
-                
                 <hr class="border-gray-100">
-                
                 <div>
-                    <h4 class="text-sm font-bold text-gray-500 mb-2 tracking-wide"><i class="fa-solid fa-comments mr-1 text-indigo-500"></i>大眾評價與心得</h4>
+                    <h4 class="text-sm font-bold text-gray-500 mb-2"><i class="fa-solid fa-comments mr-1 text-indigo-500"></i>大眾評價與心得</h4>
                     <div id="modal-reviews-container" class="space-y-2"></div>
                 </div>
-                
                 <hr class="border-gray-100">
-                
                 <form id="review-form" onsubmit="submitReview(event)" class="space-y-3">
-                    <h4 class="text-sm font-bold text-gray-500 tracking-wide"><i class="fa-solid fa-pen-to-square mr-1 text-amber-500"></i>發表您的評分與評論</h4>
+                    <h4 class="text-sm font-bold text-gray-500"><i class="fa-solid fa-pen-to-square mr-1 text-amber-500"></i>發表您的評分與評論</h4>
                     <div>
-                        <label class="block text-xs text-gray-400 font-bold mb-1">評分星級</label>
                         <select id="form-rating" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm font-medium focus:outline-indigo-500">
                             <option value="5">⭐⭐⭐⭐⭐ 5 分 (極力推薦)</option>
                             <option value="4">⭐⭐⭐⭐ 4 分 (很不錯)</option>
@@ -104,7 +97,6 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 font-bold mb-1">評論心得</label>
                         <textarea id="form-comment" rows="3" required placeholder="分享您去看展的心得與建議..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500"></textarea>
                     </div>
                     <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-xs cursor-pointer">
@@ -121,17 +113,11 @@
         let userLat = 25.0478; 
         let userLon = 121.5170;
         let currentActiveTitle = ""; 
+        let fetchRetryCount = 0;
+        const MAX_RETRIES = 2; // 最多重試 2 次
 
         window.onload = function() {
-            setTimeout(() => {
-                if (rawData.length === 0) {
-                    const tip = document.getElementById('render-tip');
-                    if(tip) tip.classList.remove('hidden');
-                    const status = document.getElementById('loading-status');
-                    if(status) status.innerText = "正在連線並喚醒雲端伺服器...";
-                }
-            }, 3000);
-
+            // 嘗試獲取定位，並加上 5 秒超時機制 (解決手機沒反應卡死的問題)
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -143,7 +129,8 @@
                     (error) => {
                         document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)`;
                         fetchData(); 
-                    }
+                    },
+                    { timeout: 5000 } // 超過 5 秒沒拿到定位，直接報錯並執行上方 error 回呼
                 );
             } else {
                 document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)`;
@@ -156,16 +143,53 @@
             try {
                 const res = await fetch(`${API_BASE}/api/exhibitions?lat=${userLat}&lon=${userLon}`);
                 const json = await res.json();
-                if (json.status === "success") {
+                
+                if (json.status === "success" && json.data) {
                     rawData = json.data;
                     renderDOM(rawData);
+                    showLoading(false); // 🔑 就是少了這一行！現在加上去，成功抓到資料就會關閉圈圈。
+                    fetchRetryCount = 0; 
                 } else {
-                    showErrorState("後端錯誤: " + json.message);
+                    throw new Error(json.message || "資料格式不符");
                 }
             } catch (err) {
-                showErrorState("後端伺服器冷啟動中！正在幫您自動重試喚醒，請稍候...");
-                setTimeout(fetchData, 4000);
+                if (fetchRetryCount < MAX_RETRIES) {
+                    fetchRetryCount++;
+                    const tip = document.getElementById('render-tip');
+                    if(tip) tip.classList.remove('hidden');
+                    const status = document.getElementById('loading-status');
+                    if(status) status.innerHTML = `<span class="text-amber-500">正在等待伺服器喚醒 (第 ${fetchRetryCount} 次重試)...</span>`;
+                    setTimeout(fetchData, 4000);
+                } else {
+                    // 如果 API 真的掛了，直接塞入假資料，保證能看到畫面！
+                    document.getElementById('loading-status').innerHTML = `<span class="text-rose-500">伺服器無回應，已切換至「離線測試模式」</span>`;
+                    loadMockData();
+                }
             }
+        }
+
+        // 當 API 完全壞掉時的備用假資料
+        function loadMockData() {
+            rawData = [
+                {
+                    title: "【離線測試】2026 台北藝術雙年展",
+                    location: "台北市立美術館",
+                    description: "此為後端 API 無法連線時自動啟用的測試資料。展示基本的排版與功能是否正常。",
+                    eta_car: 15, eta_moto: 10, eta_transit: 25,
+                    rating_avg: 4.8,
+                    reviews: [{ rating: 5, comment: "這是一個測試評論！" }]
+                },
+                {
+                    title: "【離線測試】印象派光影沉浸展",
+                    location: "松山文創園區",
+                    description: "測試資料二號。您可以看到無論伺服器狀況如何，畫面依然能順利跑出來了。",
+                    eta_car: 22, eta_moto: 18, eta_transit: 30,
+                    rating_avg: 4.1,
+                    reviews: []
+                }
+            ];
+            renderDOM(rawData);
+            showLoading(false); // 強制關閉轉圈圈！
         }
 
         function showLoading(isLoading) {
@@ -178,15 +202,9 @@
                 if(list) list.classList.add('hidden');
             } else {
                 if(loader) loader.classList.add('hidden');
-                if(list) list.classList.remove('hidden');
+                if(icon) icon.classList.remove('animate-spin'); // 停止動畫
+                if(list) list.classList.remove('hidden'); // 顯示展覽列表
             }
-        }
-
-        function showErrorState(message) {
-            const status = document.getElementById('loading-status');
-            const tip = document.getElementById('render-tip');
-            if(status) status.innerHTML = `<span class="text-rose-500"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${message}</span>`;
-            if(tip) tip.classList.remove('hidden');
         }
 
         function renderDOM(data) {
@@ -203,9 +221,7 @@
                 card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
-                
-                // ✅ 真正的完美修復：這裡換成了標準的 $ 符號，而且使用了官方標準的 Google Maps 搜尋網址！
-                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
+                const mapUrl = `http://googleusercontent.com/maps.google.com/${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
                     <div class="relative w-24 h-24 min-w-24 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
@@ -235,7 +251,7 @@
 
                             <div class="flex gap-1.5">
                                 <button onclick="openModalByIndex(this)" data-index="${index}" class="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-[11px] md:text-xs py-1.5 rounded-lg transition-all cursor-pointer">
-                                    <i class="fa-solid fa-circle-info mr-0.5"></i>詳情與評論 (${(ex.reviews || []).length})
+                                    <i class="fa-solid fa-circle-info mr-0.5"></i>詳情 (${(ex.reviews || []).length})
                                 </button>
                                 <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] md:text-xs px-2.5 py-1.5 rounded-lg text-center flex items-center justify-center gap-0.5 cursor-pointer">
                                     <i class="fa-solid fa-location-arrow"></i>導航
@@ -248,10 +264,9 @@
             });
         }
 
-        // 🎲 隨機推薦系統
         function getRandomExhibition() {
             if (rawData.length === 0) {
-                alert("目前沒有展覽資料可以抽取喔！請確認伺服器是否已開啟。");
+                alert("目前沒有展覽資料可以抽取喔！");
                 return;
             }
             const randomIndex = Math.floor(Math.random() * rawData.length);
@@ -263,20 +278,17 @@
             openModalDetails(index, false);
         }
 
-        // 📥 視窗渲染引擎
         function openModalDetails(index, isRandom = false) {
             const target = rawData[index];
             if (!target) return;
 
             currentActiveTitle = target.title;
             
-            // 🎯 隨機抽籤標題
             document.getElementById('modal-title').innerHTML = isRandom 
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
 
-            // ✅ 真正的完美修復：這裡也換成了標準的 $ 符號與官方 Google Maps 網址！
-            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
+            const mapUrl = `http://googleusercontent.com/maps.google.com/${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
                 <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
@@ -293,12 +305,6 @@
                     <div class="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-2xs">
                         <b class="text-gray-800 block mb-1">📝 展覽詳細介紹：</b>
                         ${target.description || '本展覽為當季雙北熱門亮點，現場展出豐富作品與互動裝置，非常適合安排行程前往探索，體驗藝文與知性之美。'}
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">
-                        <div><i class="fa-solid fa-car text-blue-500 block mb-0.5 text-sm"></i>開車<br><span class="font-bold text-gray-900">${target.eta_car || '--'} 分</span></div>
-                        <div class="border-x border-gray-200"><i class="fa-solid fa-motorcycle text-amber-500 block mb-0.5 text-sm"></i>機車<br><span class="font-bold text-gray-900">${target.eta_moto || '--'} 分</span></div>
-                        <div><i class="fa-solid fa-train-subway text-emerald-500 block mb-0.5 text-sm"></i>捷運<br><span class="font-bold text-gray-900">${target.eta_transit || '--'} 分</span></div>
                     </div>
 
                     <a href="${mapUrl}" target="_blank" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer">
@@ -347,11 +353,7 @@
                 const res = await fetch(`${API_BASE}/api/review`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        title: currentActiveTitle,
-                        rating: rating,
-                        comment: comment
-                    })
+                    body: JSON.stringify({ title: currentActiveTitle, rating: rating, comment: comment })
                 });
                 const json = await res.json();
                 if (json.status === "success") {
@@ -362,7 +364,7 @@
                     alert("發表失敗: " + json.message);
                 }
             } catch (err) {
-                alert("連線後端失敗，無法儲存評論。");
+                alert("連線後端失敗，無法儲存評論。如果是測試資料模式將無法儲存。");
             }
         }
 
