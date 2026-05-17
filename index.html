@@ -11,7 +11,6 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         * { -webkit-tap-highlight-color: transparent; }
         
-        /* 自定義頁籤切換的動畫 */
         .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -134,7 +133,7 @@
         const API_BASE = "https://taipei-exhi-api.onrender.com";
         let rawData = [];
         
-        // 🎯 定位失敗時的預設經緯度：台北車站
+        // 預設經緯度：台北車站
         let userLat = 25.0478; 
         let userLon = 121.5170;
         
@@ -155,7 +154,6 @@
                 if (!locationResolved) {
                     locationResolved = true;
                     clearInterval(countdownInterval);
-                    // 🎯 超時預設台北車站
                     document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>定位超時 (預設台北車站)`;
                     fetchData(); 
                 }
@@ -178,7 +176,6 @@
                         locationResolved = true;
                         clearTimeout(fallbackTimer);
                         clearInterval(countdownInterval);
-                        // 🎯 錯誤預設台北車站
                         document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>無法定位 (預設台北車站)`;
                         fetchData(); 
                     },
@@ -189,7 +186,6 @@
                 locationResolved = true;
                 clearTimeout(fallbackTimer);
                 clearInterval(countdownInterval);
-                // 🎯 不支援預設台北車站
                 document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>不支援定位 (預設台北車站)`;
                 fetchData();
             }
@@ -224,20 +220,15 @@
             }
         }
 
-        // 🎯 離線測試資料：南港展覽館
+        // 🎯 這次完全照著你的要求：名稱就是 [⏱️ 自動化測試展覽 ]，地點就是 南港展覽館
         function loadMockData() {
             rawData = [
                 {
-                    title: "【自動化測試】2026 台北國際自動化工業大展", location: "台北南港展覽館1館",
-                    description: "此為後端 API 無法連線時自動啟用的測試資料。為今年度最具指標性之工業與自動化盛會。",
-                    eta_car: 5, eta_moto: 3, eta_transit: 5, rating_avg: 4.8,
-                    reviews: [{ rating: 5, comment: "規劃動線很棒，攤位非常豐富！" }]
-                },
-                {
-                    title: "【自動化測試】台北國際電玩展 Taipei Game Show", location: "台北南港展覽館2館",
-                    description: "亞洲最大規模電玩盛會，現場眾多遊戲試玩與電競比賽。",
-                    eta_car: 6, eta_moto: 4, eta_transit: 8, rating_avg: 4.1,
-                    reviews: []
+                    title: "[⏱️ 自動化測試展覽 ]", 
+                    location: "南港展覽館",
+                    description: "此為後端 API 無法連線時自動啟用的測試資料。確保前端排版與導航功能皆可正常運作。",
+                    eta_car: 5, eta_moto: 3, eta_transit: 5, rating_avg: 5.0,
+                    reviews: [{ rating: 5, comment: "前端切版與自動導航測試正常！" }]
                 }
             ];
             renderDOM(rawData);
@@ -274,9 +265,7 @@
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
                 
-                // 💡 導航升級：使用 Google Maps Directions API 格式
-                // origin: 帶入使用者的經緯度 (userLat, userLon)
-                // destination: 帶入展覽名稱與地址
+                // 自動帶入當前位置與目的地導航
                 const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
@@ -343,7 +332,6 @@
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> 展覽總覽`;
 
-            // 💡 導航升級：彈出視窗的按鈕也套用自動帶入起點與終點的格式
             const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
