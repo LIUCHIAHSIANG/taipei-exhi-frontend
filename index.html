@@ -184,7 +184,7 @@
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
                 
-                // 💡 已修正：標準 Google Maps 搜尋連結
+                // 💡 修正插值 Bug：將原本錯誤的 0{...} 改回正確的 ${...} 導航網址
                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
@@ -250,12 +250,12 @@
 
             currentActiveTitle = target.title;
             
-            // 💡 這裡已將標題改為您指定的親切文字
+            // 💡 標題修正：如果是隨機推薦抽取，換成目標指定標題
             document.getElementById('modal-title').innerHTML = isRandom 
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
 
-            // 💡 已修正：標準 Google Maps 搜尋連結
+            // 💡 修正插值 Bug：改回正確的 ${...} 導航網址
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
@@ -308,7 +308,7 @@
                 });
             }
 
-            // 打開新視窗時，自動將內部滾動條重設回最頂端
+            // 自動將內部滾動條重設回最頂端
             const modalBody = document.querySelector('#review-modal .overflow-y-auto');
             if (modalBody) modalBody.scrollTop = 0;
 
@@ -370,7 +370,7 @@
                 if(list) list.classList.add('hidden');
             } else {
                 if(loader) loader.classList.add('hidden');
-                if(list) list.classList.remove('hidden');
+                if(list) list.remove('hidden');
             }
         }
     </script>
