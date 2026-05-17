@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>雙北展覽導航城</title>
+    <title>雙北展覽資訊整合平台</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -18,22 +18,32 @@
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2">
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-black tracking-wider text-indigo-600">
-                    <i class="fa-solid fa-compass text-amber-500 mr-1"></i>雙北展覽快搜
+                    <i class="fa-solid fa-compass text-amber-500 mr-1"></i>雙北展覽資訊整合平台
                 </h1>
-                <span id="location-badge" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium">
-                    <i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)
-                </span>
+                <div class="flex items-center gap-2">
+                    <button onclick="getRandomExhibition()" class="hidden md:flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-dice animate-bounce"></i> 隨機推薦
+                    </button>
+                    <span id="location-badge" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium">
+                        <i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>台北車站 (預設)
+                    </span>
+                </div>
             </div>
             
-            <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                <button onclick="filterExhibitions('all')" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all">
-                    全部展覽
-                </button>
-                <button onclick="filterExhibitions('near')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
-                    <i class="fa-solid fa-walking mr-1"></i>離我最近
-                </button>
-                <button onclick="filterExhibitions('rating')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
-                    <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
+            <div class="flex items-center justify-between gap-2 border-t border-gray-50 pt-1.5">
+                <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 flex-1">
+                    <button onclick="filterExhibitions('all')" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all">
+                        全部展覽
+                    </button>
+                    <button onclick="filterExhibitions('near')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
+                        <i class="fa-solid fa-walking mr-1"></i>離我最近
+                    </button>
+                    <button onclick="filterExhibitions('rating')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
+                        <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
+                    </button>
+                </div>
+                <button onclick="getRandomExhibition()" class="md:hidden flex items-center justify-center bg-amber-500 text-white w-8 h-8 rounded-full shadow-md shrink-0 active:scale-90 transition-all" title="隨機推薦">
+                    <i class="fa-solid fa-dice text-sm"></i>
                 </button>
             </div>
         </div>
@@ -44,154 +54,3 @@
             <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <p class="text-sm text-gray-400 font-medium">正在為您計算與展覽的精準距離...</p>
         </div>
-
-        <div id="exhibition-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
-            </div>
-    </main>
-
-    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-xl flex items-center gap-6 border border-white/10">
-        <button onclick="fetchData()" class="flex items-center gap-2 text-sm font-bold tracking-wide active:scale-95 transition-all">
-            <i class="fa-solid fa-arrows-rotate text-emerald-400"></i>重新整理
-        </button>
-        <div class="w-px h-4 bg-white/20"></div>
-        <button onclick="triggerCrawler()" class="flex items-center gap-2 text-sm font-bold tracking-wide text-indigo-300 active:scale-95 transition-all">
-            <i class="fa-solid fa-spider"></i>背景爬網
-        </button>
-    </div>
-
-    <script>
-        // 請更換成你真實的 Render 後端網址
-        const API_BASE = "https://taipei-exhi-api.onrender.com";
-        let rawData = [];
-        let userLat = 25.0478;
-        let userLon = 121.5170;
-
-        window.onload = function() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLon = position.coords.longitude;
-                        document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-crosshairs text-emerald-500 mr-1"></i>已精準定位`;
-                        fetchData();
-                    },
-                    (error) => { fetchData(); }
-                );
-            } else {
-                fetchData();
-            }
-        };
-
-        async function fetchData() {
-            showLoading(true);
-            try {
-                const res = await fetch(`${API_BASE}/api/exhibitions?lat=${userLat}&lon=${userLon}`);
-                const json = await res.json();
-                if (json.status === "success") {
-                    rawData = json.data;
-                    renderDOM(rawData);
-                } else {
-                    alert("後端錯誤: " + json.message);
-                }
-            } catch (err) {
-                alert("無法連線至後端伺服器！");
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function renderDOM(data) {
-            const container = document.getElementById('exhibition-list');
-            container.innerHTML = "";
-
-            if(data.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400 text-sm">目前沒有展覽資料喔 🏖️</div>`;
-                return;
-            }
-
-            data.forEach(ex => {
-                const card = document.createElement('div');
-                
-                // 💡 RWD 魔法就在這裡：
-                // 手機版：flex-row (橫式小卡), p-3 (省空間), rounded-xl
-                // 桌機版 (md:)：恢復成原本的 flex-col (直式大卡), md:p-5 (寬敞), md:rounded-2xl
-                card.className = "bg-white rounded-xl md:rounded-2xl border border-gray-100 p-3 md:p-5 shadow-sm flex flex-row md:flex-col gap-4 hover:shadow-md transition-all duration-300";
-                
-                const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg}` : '★ 暫無評分';
-
-                card.innerHTML = `
-                    <div class="relative w-24 h-24 min-w-24 md:w-full md:h-48 bg-gray-100 rounded-lg md:rounded-xl overflow-hidden shrink-0">
-                        <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
-                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-[10px] md:text-xs px-2 py-0.5 rounded-md">
-                            ${ratingText}
-                        </span>
-                    </div>
-
-                    <div class="flex flex-col justify-between flex-1 min-w-0">
-                        <div>
-                            <h3 class="text-base md:text-xl font-bold text-gray-900 truncate mb-1" title="${ex.title}">${ex.title}</h3>
-                            <p class="text-xs md:text-sm text-gray-400 font-medium truncate mb-3">
-                                <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.location || '雙北展覽館'}
-                            </p>
-                        </div>
-                        
-                        <div class="mt-auto">
-                            <div class="flex items-center justify-between md:hidden bg-indigo-50/60 px-2 py-1.5 rounded-lg">
-                                <span class="text-xs text-indigo-600 font-bold"><i class="fa-solid fa-car mr-1"></i>預估車程 ${ex.eta_car || '--'} 分鐘</span>
-                                <span class="text-[10px] font-extrabold text-indigo-400">📍 離你最近</span>
-                            </div>
-
-                            <div class="hidden md:grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-xl text-center text-xs text-gray-600">
-                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-car text-blue-500 mb-1 block text-sm"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car}分</span></div>
-                                <div class="border-r border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mb-1 block text-sm"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto}分</span></div>
-                                <div><i class="fa-solid fa-train-subway text-emerald-500 mb-1 block text-sm"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit}分</span></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function filterExhibitions(type) {
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(btn => btn.className = "filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all");
-            event.currentTarget.className = "filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all";
-
-            let filtered = [...rawData];
-            if (type === 'near') {
-                filtered.sort((a, b) => (a.eta_car || 999) - (b.eta_car || 999));
-            } else if (type === 'rating') {
-                filtered.sort((a, b) => (typeof b.rating_avg === 'number' ? b.rating_avg : 0) - (typeof a.rating_avg === 'number' ? a.rating_avg : 0));
-            }
-            renderDOM(filtered);
-        }
-
-        async function triggerCrawler() {
-            if(!confirm("確定要現在啟動雲端自動爬蟲更新資料庫嗎？")) return;
-            showLoading(true);
-            try {
-                const res = await fetch(`${API_BASE}/api/trigger-crawler`);
-                const json = await res.json();
-                alert(json.message);
-                fetchData();
-            } catch (err) {
-                alert("觸發爬蟲失敗。");
-                showLoading(false);
-            }
-        }
-
-        function showLoading(isLoading) {
-            const loader = document.getElementById('loading');
-            const list = document.getElementById('exhibition-list');
-            if (isLoading) {
-                loader.classList.remove('hidden');
-                list.classList.add('hidden');
-            } else {
-                loader.classList.add('hidden');
-                list.classList.remove('hidden');
-            }
-        }
-    </script>
-</body>
-</html>
