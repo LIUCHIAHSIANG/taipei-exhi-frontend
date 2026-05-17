@@ -204,7 +204,7 @@
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
                 
-                // 🛠️ 真正修復！這裡百分之百是 ${} 了！
+                // ✅ 真正的完美修復：這裡換成了標準的 $ 符號，而且使用了官方標準的 Google Maps 搜尋網址！
                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
@@ -270,12 +270,12 @@
 
             currentActiveTitle = target.title;
             
-            // 🎯 隨機抽籤標題：這次真的百分之百修好了！
+            // 🎯 隨機抽籤標題
             document.getElementById('modal-title').innerHTML = isRandom 
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
 
-            // 🛠️ 真正修復！彈出視窗內的地圖導航網址
+            // ✅ 真正的完美修復：這裡也換成了標準的 $ 符號與官方 Google Maps 網址！
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
