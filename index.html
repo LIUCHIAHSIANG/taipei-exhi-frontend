@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>雙北展覽資訊整合平台</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link class="flex" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -184,7 +184,7 @@
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
                 
-                // 💡 修正後：高相容性 Google Maps 官方 API 地圖搜尋導航生成網址
+                // 💡 已修正：標準 Google Maps 搜尋連結
                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
@@ -250,11 +250,12 @@
 
             currentActiveTitle = target.title;
             
+            // 💡 這裡已將標題改為您指定的親切文字
             document.getElementById('modal-title').innerHTML = isRandom 
-                ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 隨機推薦抽中卡片！` 
+                ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
                 : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
 
-            // 💡 修正後：高相容性 Google Maps 官方 API 地圖搜尋導航生成網址
+            // 💡 已修正：標準 Google Maps 搜尋連結
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
@@ -307,7 +308,7 @@
                 });
             }
 
-            // 💡 解決手機版 UX 痛點：打開新視窗時，自動將內部滾動條重設回最頂端
+            // 打開新視窗時，自動將內部滾動條重設回最頂端
             const modalBody = document.querySelector('#review-modal .overflow-y-auto');
             if (modalBody) modalBody.scrollTop = 0;
 
