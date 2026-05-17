@@ -10,6 +10,11 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         * { -webkit-tap-highlight-color: transparent; }
+        
+        /* 自定義頁籤切換的動畫 */
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased pb-12">
@@ -59,7 +64,7 @@
             <div class="space-y-2">
                 <p id="loading-status" class="text-base font-bold text-gray-800">正在請求您的位置權限...</p>
                 <p id="loading-desc" class="text-xs text-gray-500 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    若無跳出提示或等待過久，系統將在 <span id="countdown" class="text-amber-600 font-bold">5</span> 秒後自動進入畫面。
+                    若無跳出提示或等待過久，系統將在 <span id="countdown" class="text-amber-600 font-bold">5</span> 秒後自動以<span class="font-bold text-gray-800">台北車站</span>為起點進入畫面。
                 </p>
                 <p id="render-tip" class="text-[11px] text-amber-600 hidden font-medium">
                     ⚠️ 偵測到雲端伺服器睡眠中，正在進行冷啟動喚醒，請耐心等待...
@@ -73,36 +78,54 @@
 
     <div id="review-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            
             <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                <h2 id="modal-title" class="text-lg font-bold text-gray-900 flex items-center gap-1.5 pr-4">展覽詳情</h2>
+                <h2 id="modal-title" class="text-lg font-bold text-gray-900 flex items-center gap-1.5 pr-4">展覽資訊</h2>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="p-5 overflow-y-auto space-y-5 flex-1">
-                <div id="modal-info-container"></div>
-                <hr class="border-gray-100">
-                <div>
-                    <h4 class="text-sm font-bold text-gray-500 mb-2"><i class="fa-solid fa-comments mr-1 text-indigo-500"></i>大眾評價與心得</h4>
-                    <div id="modal-reviews-container" class="space-y-2"></div>
+
+            <div class="flex border-b border-gray-100 bg-white">
+                <button onclick="switchTab('details')" id="tab-btn-details" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition-all">
+                    <i class="fa-solid fa-circle-info mr-1"></i>展覽詳情
+                </button>
+                <button onclick="switchTab('reviews')" id="tab-btn-reviews" class="flex-1 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition-all">
+                    <i class="fa-solid fa-comments mr-1"></i>評價與心得
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-1 bg-gray-50/50">
+                
+                <div id="tab-content-details" class="tab-content active space-y-4">
+                    <div id="modal-info-container"></div>
                 </div>
-                <hr class="border-gray-100">
-                <form id="review-form" onsubmit="submitReview(event)" class="space-y-3">
-                    <h4 class="text-sm font-bold text-gray-500"><i class="fa-solid fa-pen-to-square mr-1 text-amber-500"></i>發表您的評分與評論</h4>
+                
+                <div id="tab-content-reviews" class="tab-content space-y-5">
                     <div>
-                        <select id="form-rating" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm font-medium focus:outline-indigo-500">
-                            <option value="5">⭐⭐⭐⭐⭐ 5 分 (極力推薦)</option>
-                            <option value="4">⭐⭐⭐⭐ 4 分 (很不錯)</option>
-                            <option value="3">⭐⭐⭐ 3 分 (普通)</option>
-                            <option value="2">⭐⭐ 2 分 (有待加強)</option>
-                            <option value="1">⭐ 1 分 (不推薦)</option>
-                        </select>
+                        <h4 class="text-sm font-bold text-gray-500 mb-2"><i class="fa-solid fa-star text-amber-500 mr-1"></i>大家怎麼說</h4>
+                        <div id="modal-reviews-container" class="space-y-2"></div>
                     </div>
-                    <div>
-                        <textarea id="form-comment" rows="3" required placeholder="分享您去看展的心得與建議..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500"></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-xs cursor-pointer">
-                        提交評論與星級
-                    </button>
-                </form>
+                    <hr class="border-gray-200">
+                    <form id="review-form" onsubmit="submitReview(event)" class="space-y-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <h4 class="text-sm font-bold text-gray-700"><i class="fa-solid fa-pen-to-square mr-1 text-indigo-500"></i>發表您的評論</h4>
+                        <div>
+                            <label class="block text-xs text-gray-400 font-bold mb-1">給予評分</label>
+                            <select id="form-rating" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm font-medium focus:outline-indigo-500">
+                                <option value="5">⭐⭐⭐⭐⭐ 5 分 (極力推薦)</option>
+                                <option value="4">⭐⭐⭐⭐ 4 分 (很不錯)</option>
+                                <option value="3">⭐⭐⭐ 3 分 (普通)</option>
+                                <option value="2">⭐⭐ 2 分 (有待加強)</option>
+                                <option value="1">⭐ 1 分 (不推薦)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 font-bold mb-1">撰寫心得</label>
+                            <textarea id="form-comment" rows="3" required placeholder="分享您去看展的心得與建議..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-indigo-500"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-xs cursor-pointer">
+                            提交評論
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -110,15 +133,17 @@
     <script>
         const API_BASE = "https://taipei-exhi-api.onrender.com";
         let rawData = [];
+        
+        // 🎯 定位失敗時的預設經緯度：改回「台北車站」
         let userLat = 25.0478; 
         let userLon = 121.5170;
+        
         let currentActiveTitle = ""; 
         let fetchRetryCount = 0;
         const MAX_RETRIES = 2;
-        let locationResolved = false; // 追蹤定位是否已經有結果
+        let locationResolved = false;
 
         window.onload = function() {
-            // 核彈級防呆：倒數 5 秒，不管瀏覽器定位是不是卡死，時間到直接強迫進入系統
             let secondsLeft = 5;
             const countdownEl = document.getElementById('countdown');
             const countdownInterval = setInterval(() => {
@@ -130,13 +155,13 @@
                 if (!locationResolved) {
                     locationResolved = true;
                     clearInterval(countdownInterval);
+                    // 🎯 超時預設台北車站
                     document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>定位超時 (預設台北車站)`;
-                    fetchData(); // 強制啟動抓取資料
+                    fetchData(); 
                 }
             }, 5000);
 
             if (navigator.geolocation) {
-                // 加入 enableHighAccuracy: true 盡可能提高電腦版準確度
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         if (locationResolved) return;
@@ -153,6 +178,7 @@
                         locationResolved = true;
                         clearTimeout(fallbackTimer);
                         clearInterval(countdownInterval);
+                        // 🎯 錯誤預設台北車站
                         document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>無法定位 (預設台北車站)`;
                         fetchData(); 
                     },
@@ -163,6 +189,7 @@
                 locationResolved = true;
                 clearTimeout(fallbackTimer);
                 clearInterval(countdownInterval);
+                // 🎯 不支援預設台北車站
                 document.getElementById('location-badge').innerHTML = `<i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>不支援定位 (預設台北車站)`;
                 fetchData();
             }
@@ -197,18 +224,19 @@
             }
         }
 
+        // 🎯 離線測試資料：如你所願，保留「南港展覽館」
         function loadMockData() {
             rawData = [
                 {
-                    title: "【離線測試】2026 台北藝術雙年展", location: "台北市立美術館",
-                    description: "此為後端 API 無法連線時自動啟用的測試資料。展示基本的排版與功能是否正常。",
-                    eta_car: 15, eta_moto: 10, eta_transit: 25, rating_avg: 4.8,
-                    reviews: [{ rating: 5, comment: "這是一個測試評論！" }]
+                    title: "【自動化測試】2026 台北國際自動化工業大展", location: "台北南港展覽館1館",
+                    description: "此為後端 API 無法連線時自動啟用的測試資料。為今年度最具指標性之工業與自動化盛會。",
+                    eta_car: 5, eta_moto: 3, eta_transit: 5, rating_avg: 4.8,
+                    reviews: [{ rating: 5, comment: "規劃動線很棒，攤位非常豐富！" }]
                 },
                 {
-                    title: "【離線測試】印象派光影沉浸展", location: "松山文創園區",
-                    description: "測試資料二號。您可以看到無論伺服器狀況如何，畫面依然能順利跑出來了。",
-                    eta_car: 22, eta_moto: 18, eta_transit: 30, rating_avg: 4.1,
+                    title: "【自動化測試】台北國際電玩展 Taipei Game Show", location: "台北南港展覽館2館",
+                    description: "亞洲最大規模電玩盛會，現場眾多遊戲試玩與電競比賽。",
+                    eta_car: 6, eta_moto: 4, eta_transit: 8, rating_avg: 4.1,
                     reviews: []
                 }
             ];
@@ -242,44 +270,42 @@
 
             data.forEach((ex, index) => {
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
+                card.className = "bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row gap-4 hover:shadow-md transition-all duration-300 items-start";
                 
                 const ratingText = typeof ex.rating_avg === 'number' ? `★ ${ex.rating_avg.toFixed(1)}` : '★ 暫無評分';
-                
-                // 🗺️ 真正標準的 Google Maps 導航搜尋網址
                 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ex.title + ' ' + (ex.location || ''))}`;
 
                 card.innerHTML = `
-                    <div class="relative w-24 h-24 min-w-24 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
+                    <div class="relative w-full h-36 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
                         <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
-                        <span class="absolute top-1.5 left-1.5 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-[10px] md:text-xs px-1.5 py-0.5 rounded-sm">
+                        <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-xs px-2 py-0.5 rounded-sm">
                             ${ratingText}
                         </span>
                     </div>
 
-                    <div class="flex flex-col justify-between flex-1 min-w-0 h-full">
+                    <div class="flex flex-col justify-between flex-1 min-w-0 w-full h-full">
                         <div>
-                            <h3 class="text-sm md:text-lg font-bold text-gray-900 truncate mb-0.5" title="${ex.title}">${ex.title}</h3>
-                            <p class="text-[11px] md:text-sm text-gray-400 font-medium truncate mb-2">
+                            <h3 class="text-base md:text-lg font-bold text-gray-900 truncate mb-1" title="${ex.title}">${ex.title}</h3>
+                            <p class="text-xs text-gray-400 font-medium truncate mb-2">
                                 <i class="fa-solid fa-map-pin text-rose-400 mr-1"></i>${ex.location || '雙北展覽館'}
-                            </p>
-                            <p class="text-xs text-gray-500 line-clamp-2 mb-2 hidden sm:block">
-                                ${ex.description || '點擊詳情查看更多關於本展覽的完整介紹。'}
                             </p>
                         </div>
                         
                         <div class="space-y-2 mt-auto">
-                            <div class="grid grid-cols-3 gap-1 bg-gray-50 p-1.5 rounded-lg text-center text-[10px] md:text-xs text-gray-600">
+                            <div class="grid grid-cols-3 gap-1 bg-gray-50 p-1.5 rounded-lg text-center text-xs text-gray-600">
                                 <div><i class="fa-solid fa-car text-blue-500 mr-0.5"></i>開車<br><span class="font-bold text-gray-900">${ex.eta_car || '--'}分</span></div>
                                 <div class="border-x border-gray-200/60"><i class="fa-solid fa-motorcycle text-amber-500 mr-0.5"></i>機車<br><span class="font-bold text-gray-900">${ex.eta_moto || '--'}分</span></div>
                                 <div><i class="fa-solid fa-train-subway text-emerald-500 mr-0.5"></i>捷運<br><span class="font-bold text-gray-900">${ex.eta_transit || '--'}分</span></div>
                             </div>
 
                             <div class="flex gap-1.5">
-                                <button onclick="openModalByIndex(this)" data-index="${index}" class="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-[11px] md:text-xs py-1.5 rounded-lg transition-all cursor-pointer">
-                                    <i class="fa-solid fa-circle-info mr-0.5"></i>詳情 (${(ex.reviews || []).length})
+                                <button onclick="openModalByIndex(${index}, 'details')" class="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs py-2 rounded-lg transition-all cursor-pointer">
+                                    <i class="fa-solid fa-circle-info mr-0.5"></i>詳情
                                 </button>
-                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-[11px] md:text-xs px-2.5 py-1.5 rounded-lg text-center flex items-center justify-center gap-0.5 cursor-pointer">
+                                <button onclick="openModalByIndex(${index}, 'reviews')" class="flex-1 text-center bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold text-xs py-2 rounded-lg transition-all cursor-pointer">
+                                    <i class="fa-solid fa-comments mr-0.5"></i>評論 (${(ex.reviews || []).length})
+                                </button>
+                                <a href="${mapUrl}" target="_blank" class="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs px-3 py-2 rounded-lg text-center flex items-center justify-center gap-0.5 cursor-pointer">
                                     <i class="fa-solid fa-location-arrow"></i>導航
                                 </a>
                             </div>
@@ -296,15 +322,14 @@
                 return;
             }
             const randomIndex = Math.floor(Math.random() * rawData.length);
-            openModalDetails(randomIndex, true); 
+            openModalDetails(randomIndex, true, 'details'); 
         }
 
-        function openModalByIndex(button) {
-            const index = parseInt(button.getAttribute('data-index'));
-            openModalDetails(index, false);
+        function openModalByIndex(index, targetTab = 'details') {
+            openModalDetails(index, false, targetTab);
         }
 
-        function openModalDetails(index, isRandom = false) {
+        function openModalDetails(index, isRandom = false, targetTab = 'details') {
             const target = rawData[index];
             if (!target) return;
 
@@ -312,15 +337,15 @@
             
             document.getElementById('modal-title').innerHTML = isRandom 
                 ? `<i class="fa-solid fa-dice text-amber-500 mr-1 animate-bounce"></i> 這次推薦你看看這個展覽喔!` 
-                : `<i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i> 展覽詳細資訊`;
+                : `<i class="fa-solid fa-layer-group text-indigo-500 mr-1"></i> 展覽總覽`;
 
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.title + ' ' + (target.location || ''))}`;
             
             document.getElementById('modal-info-container').innerHTML = `
-                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
                     <div class="flex justify-between items-start gap-2">
                         <div>
-                            <h3 class="text-base md:text-lg font-bold text-gray-900">${target.title}</h3>
+                            <h3 class="text-base font-bold text-gray-900 leading-tight">${target.title}</h3>
                             <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-map-pin text-rose-500 mr-1"></i>${target.location || '雙北展覽館'}</p>
                         </div>
                         <span class="bg-amber-400 text-gray-900 font-black text-xs px-2 py-1 rounded-md shrink-0">
@@ -328,13 +353,13 @@
                         </span>
                     </div>
                     
-                    <div class="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-lg border border-gray-100 shadow-2xs">
-                        <b class="text-gray-800 block mb-1">📝 展覽詳細介紹：</b>
+                    <div class="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <b class="text-gray-800 block mb-1">📝 展覽介紹：</b>
                         ${target.description || '本展覽為當季雙北熱門亮點，現場展出豐富作品與互動裝置，非常適合安排行程前往探索，體驗藝文與知性之美。'}
                     </div>
 
-                    <a href="${mapUrl}" target="_blank" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-xs text-center flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer">
-                        <i class="fa-solid fa-location-arrow animate-pulse"></i> 啟動 Google Maps 地圖導航
+                    <a href="${mapUrl}" target="_blank" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-lg text-sm text-center flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-location-arrow animate-pulse"></i> 前往 Google Maps 地圖導航
                     </a>
                 </div>
             `;
@@ -344,14 +369,14 @@
             reviewsContainer.innerHTML = "";
 
             if (reviews.length === 0) {
-                reviewsContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-2">目前此展覽還沒有大眾點評，快來發表第一個評分吧！</p>`;
+                reviewsContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-3 text-center bg-white rounded-lg border border-gray-100">目前此展覽還沒有大眾點評，快來發表第一個評分吧！</p>`;
             } else {
                 reviews.forEach(r => {
                     const rDiv = document.createElement('div');
-                    rDiv.className = "bg-gray-50 p-3 rounded-xl text-sm border border-gray-100 shadow-2xs";
+                    rDiv.className = "bg-white p-3 rounded-xl text-sm border border-gray-100 shadow-sm";
                     if (typeof r === 'object' && r !== null) {
                         const stars = '⭐'.repeat(r.rating || 5);
-                        rDiv.innerHTML = `<div class="text-[10px] text-amber-500 font-bold mb-0.5">${stars}</div><div class="text-gray-700 font-medium">${r.comment || ''}</div>`;
+                        rDiv.innerHTML = `<div class="text-[10px] text-amber-500 font-bold mb-1">${stars}</div><div class="text-gray-700 font-medium">${r.comment || ''}</div>`;
                     } else {
                         rDiv.innerHTML = `<div class="text-gray-700 font-medium">${r}</div>`;
                     }
@@ -359,10 +384,25 @@
                 });
             }
 
+            switchTab(targetTab);
+
             const modalBody = document.querySelector('#review-modal .overflow-y-auto');
             if (modalBody) modalBody.scrollTop = 0;
 
             document.getElementById('review-modal').classList.remove('hidden');
+        }
+
+        function switchTab(tabId) {
+            document.getElementById('tab-btn-details').className = (tabId === 'details') 
+                ? "flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition-all bg-indigo-50/30"
+                : "flex-1 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition-all cursor-pointer";
+            
+            document.getElementById('tab-btn-reviews').className = (tabId === 'reviews') 
+                ? "flex-1 py-3 text-sm font-bold text-amber-600 border-b-2 border-amber-500 transition-all bg-amber-50/30"
+                : "flex-1 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition-all cursor-pointer";
+
+            document.getElementById('tab-content-details').classList.toggle('active', tabId === 'details');
+            document.getElementById('tab-content-reviews').classList.toggle('active', tabId === 'reviews');
         }
 
         function closeModal() {
