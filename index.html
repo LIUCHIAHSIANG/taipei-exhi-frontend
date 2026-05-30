@@ -39,13 +39,13 @@
             
             <div class="flex items-center justify-between gap-3 border-t border-gray-50 pt-1.5">
                 <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 flex-1">
-                    <button onclick="filterExhibitions(this, 'all')" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all">
+                    <button onclick="filterExhibitions(this, 'all')" class="filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all cursor-pointer">
                         全部展覽
                     </button>
-                    <button onclick="filterExhibitions(this, 'near')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
+                    <button onclick="filterExhibitions(this, 'near')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all cursor-pointer">
                         <i class="fa-solid fa-walking mr-1"></i>離我最近
                     </button>
-                    <button onclick="filterExhibitions(this, 'rating')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all">
+                    <button onclick="filterExhibitions(this, 'rating')" class="filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all cursor-pointer">
                         <i class="fa-solid fa-star text-amber-400 mr-1"></i>高分好評
                     </button>
                 </div>
@@ -53,7 +53,26 @@
                     <i class="fa-solid fa-dice text-base"></i>
                 </button>
             </div>
-        </div>
+
+            <div class="flex flex-col md:flex-row gap-4 pt-2 border-t border-gray-100 mt-1">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-gray-500 whitespace-nowrap">🏷️ 展覽分類</label>
+                    <select id="categoryFilter" onchange="applyAllFilters()" class="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-1 outline-none focus:border-indigo-500 font-medium cursor-pointer">
+                        <option value="all">全部展覽</option>
+                        <option value="藝文歷史">藝文歷史</option>
+                        <option value="設計文創">設計文創</option>
+                        <option value="科技趨勢">科技趨勢</option>
+                        <option value="娛樂動漫">娛樂動漫</option>
+                        <option value="綜合">綜合</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-3 flex-1">
+                    <label class="text-xs font-bold text-gray-500 whitespace-nowrap">💰 票價上限</label>
+                    <input type="range" id="priceSlider" min="0" max="1000" step="50" value="1000" oninput="updatePriceLabel(); applyAllFilters()" class="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    <span id="priceLabel" class="text-xs font-bold text-rose-500 min-w-[65px]">1000 元</span>
+                </div>
+            </div>
+            </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-6">
@@ -72,7 +91,7 @@
         </div>
 
         <div id="exhibition-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
-            </div>
+        </div>
     </main>
 
     <div id="review-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
@@ -84,10 +103,10 @@
             </div>
 
             <div class="flex border-b border-gray-100 bg-white">
-                <button onclick="switchTab('details')" id="tab-btn-details" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition-all">
+                <button onclick="switchTab('details')" id="tab-btn-details" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition-all cursor-pointer">
                     <i class="fa-solid fa-circle-info mr-1"></i>展覽詳情
                 </button>
-                <button onclick="switchTab('reviews')" id="tab-btn-reviews" class="flex-1 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition-all">
+                <button onclick="switchTab('reviews')" id="tab-btn-reviews" class="flex-1 py-3 text-sm font-bold text-gray-400 border-b-2 border-transparent hover:text-gray-600 transition-all cursor-pointer">
                     <i class="fa-solid fa-comments mr-1"></i>評價與心得
                 </button>
             </div>
@@ -108,7 +127,7 @@
                         <h4 class="text-sm font-bold text-gray-700"><i class="fa-solid fa-pen-to-square mr-1 text-indigo-500"></i>發表您的評論</h4>
                         <div>
                             <label class="block text-xs text-gray-400 font-bold mb-1">給予評分</label>
-                            <select id="form-rating" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm font-medium focus:outline-indigo-500">
+                            <select id="form-rating" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm font-medium focus:outline-indigo-500 cursor-pointer">
                                 <option value="5">⭐⭐⭐⭐⭐ 5 分 (極力推薦)</option>
                                 <option value="4">⭐⭐⭐⭐ 4 分 (很不錯)</option>
                                 <option value="3">⭐⭐⭐ 3 分 (普通)</option>
@@ -132,6 +151,9 @@
     <script>
         const API_BASE = "https://taipei-exhi-api.onrender.com";
         let rawData = [];
+        
+        // 新增全域變數記錄當前排序模式
+        let currentSortType = 'all';
         
         // 預設經緯度：台北車站
         let userLat = 25.0478; 
@@ -208,7 +230,8 @@
                         }
                     });
 
-                    renderDOM(rawData);
+                    // 呼叫統一過濾函數，確保重新整理時維持滑桿狀態
+                    applyAllFilters();
                     showLoading(false); 
                     fetchRetryCount = 0; 
                 } else {
@@ -223,7 +246,7 @@
                     if(status) status.innerHTML = `<span class="text-amber-500">正在等待伺服器喚醒 (第 ${fetchRetryCount} 次重試)...</span>`;
                     setTimeout(fetchData, 4000);
                 } else {
-                    document.getElementById('loading-status').innerHTML = `<span class="text-rose-500">伺服器無回應，已切換至「離線測試模式}」</span>`;
+                    document.getElementById('loading-status').innerHTML = `<span class="text-rose-500">伺服器無回應，已切換至「離線測試模式」</span>`;
                     loadMockData();
                 }
             }
@@ -236,11 +259,12 @@
                     location: "台北南港展覽館1館",
                     address: "115台北市南港區經貿二路1號",
                     description: "此為後端 API 無法連線時自動啟用的測試資料。確保前端排版與導航功能皆可正常運作。",
+                    category: "綜合", price: 0,
                     eta_car: 5, eta_moto: 3, eta_transit: 5, rating_avg: 5.0,
                     reviews: [{ rating: 5, comment: "前端切版與自動導航測試正常！" }]
                 }
             ];
-            renderDOM(rawData);
+            applyAllFilters();
             showLoading(false);
         }
 
@@ -264,7 +288,7 @@
             container.innerHTML = "";
 
             if(data.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400 text-sm">目前沒有展覽資料喔 🏖️</div>`;
+                container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400"><i class="fa-solid fa-box-open text-4xl mb-3 text-gray-300"></i><p class="text-sm font-bold">目前沒有符合篩選條件的展覽喔！</p><p class="text-xs mt-1">試試調整分類或拉高票價上限吧。</p></div>`;
                 return;
             }
 
@@ -278,9 +302,26 @@
                 const destination = encodeURIComponent(ex.address || ex.location || ex.title);
                 const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${destination}`;
 
+                // 🌟 動態照片機制：真實網址 or 高質感佔位圖
+                const fallbackImages = [
+                    "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=500&auto=format&fit=crop", 
+                    "https://images.unsplash.com/photo-1518998053401-878c735c084e?w=500&auto=format&fit=crop", 
+                    "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&auto=format&fit=crop", 
+                    "https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?w=500&auto=format&fit=crop"  
+                ];
+                const finalImageUrl = (ex.image_url && ex.image_url.startsWith('http')) 
+                    ? ex.image_url 
+                    : fallbackImages[ex.title.length % fallbackImages.length];
+
+                // 標籤顯示：分類與價格
+                const categoryBadge = `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-bold mr-1">${ex.category || '綜合'}</span>`;
+                const priceBadge = (ex.price === 0) 
+                    ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">免費</span>`
+                    : `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[10px] font-bold">${ex.price} 元</span>`;
+
                 card.innerHTML = `
                     <div class="relative w-full h-36 sm:w-32 sm:h-32 sm:min-w-32 md:w-36 md:h-36 md:min-w-36 bg-gray-100 rounded-xl overflow-hidden shrink-0 self-center">
-                        <img src="https://images.unsplash.com/photo-1531251445707-1f000e1e87d0?w=500&auto=format&fit=crop" class="w-full h-full object-cover">
+                        <img src="${finalImageUrl}" class="w-full h-full object-cover">
                         <span class="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-amber-400 font-black text-xs px-2 py-0.5 rounded-sm">
                             ${ratingText}
                         </span>
@@ -288,6 +329,9 @@
 
                     <div class="flex flex-col justify-between flex-1 min-w-0 w-full h-full">
                         <div>
+                            <div class="mb-1.5 flex items-center flex-wrap gap-y-1">
+                                ${categoryBadge} ${priceBadge}
+                            </div>
                             <h3 class="text-base md:text-lg font-bold text-gray-900 truncate mb-1" title="${ex.title}">${ex.title}</h3>
                             <p class="text-xs text-gray-400 font-medium truncate mb-0.5">
                                 <i class="fa-solid fa-building text-indigo-400 mr-1"></i>${ex.location || '雙北展覽館'}
@@ -336,7 +380,11 @@
         }
 
         function openModalDetails(index, isRandom = false, targetTab = 'details') {
-            const target = rawData[index];
+            // 注意：要從過濾後的資料中開啟對應的彈窗，所以我們用全域的 rawData 找索引
+            // 但是 index 現在是迴圈出來的過濾陣列的索引，為了正確尋找，我們直接以 rawData 的內容來對照
+            // 這裡為了簡化及避免 bug，我們在畫面的 onclick 可以傳入原始在 rawData 中的索引
+            // 由於目前 renderDOM 迴圈的是 `filtered`，為了避免點擊錯亂，我們在 HTML 產生時直接抓該 ex 在 rawData 中的位置
+            const target = rawData.find(r => r.title === dataToShow[index].title);
             if (!target) return;
 
             currentActiveTitle = target.title;
@@ -400,6 +448,51 @@
             document.getElementById('review-modal').classList.remove('hidden');
         }
 
+        // 🌟 新增：統一變數供打開 Modal 比對使用
+        let dataToShow = [];
+
+        // 🌟 核心過濾機制
+        function applyAllFilters() {
+            const categorySelect = document.getElementById('categoryFilter');
+            const priceSlider = document.getElementById('priceSlider');
+            
+            const category = categorySelect ? categorySelect.value : 'all';
+            const maxPrice = priceSlider ? parseInt(priceSlider.value) : 1000;
+
+            let filtered = rawData.filter(ex => {
+                const exCat = ex.category || "綜合";
+                const exPrice = ex.price || 0;
+                const matchCategory = (category === "all" || exCat === category);
+                const matchPrice = (exPrice <= maxPrice);
+                return matchCategory && matchPrice;
+            });
+
+            if (currentSortType === 'near') {
+                filtered.sort((a, b) => (a.eta_car || 999) - (b.eta_car || 999));
+            } else if (currentSortType === 'rating') {
+                filtered.sort((a, b) => (typeof b.rating_avg === 'number' ? b.rating_avg : 0) - (typeof a.rating_avg === 'number' ? a.rating_avg : 0));
+            }
+
+            // 更新全域變數，確保點擊卡片時 Modal 能對應到正確的資料
+            dataToShow = filtered; 
+            renderDOM(filtered);
+        }
+
+        function updatePriceLabel() {
+            const val = document.getElementById('priceSlider').value;
+            document.getElementById('priceLabel').innerText = val == 0 ? "免費" : `${val} 元`;
+        }
+
+        function filterExhibitions(btnElement, type) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.className = "filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all cursor-pointer");
+            if(btnElement) {
+                btnElement.className = "filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all cursor-pointer";
+            }
+            currentSortType = type;
+            applyAllFilters();
+        }
+
         // 切換分頁
         function switchTab(tabId) {
             document.getElementById('tab-btn-details').className = (tabId === 'details') 
@@ -441,20 +534,6 @@
             } catch (err) {
                 alert("連線後端失敗，無法儲存評論。如果是測試資料模式將無法儲存。");
             }
-        }
-
-        function filterExhibitions(btnElement, type) {
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(btn => btn.className = "filter-btn whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 transition-all");
-            btnElement.className = "filter-btn active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition-all";
-
-            let filtered = [...rawData];
-            if (type === 'near') {
-                filtered.sort((a, b) => (a.eta_car || 999) - (b.eta_car || 999));
-            } else if (type === 'rating') {
-                filtered.sort((a, b) => (typeof b.rating_avg === 'number' ? b.rating_avg : 0) - (typeof a.rating_avg === 'number' ? a.rating_avg : 0));
-            }
-            renderDOM(filtered);
         }
     </script>
 </body>
